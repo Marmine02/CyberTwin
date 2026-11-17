@@ -32,7 +32,11 @@
     "markRead": "Mark all as read",
     "language": "Language"
   },
-  "lang": {"en": "English", "tr": "Türkçe", "az": "Azərbaycanca"},
+  "lang": {
+    "en": "English",
+    "tr": "Türkçe",
+    "az": "Azərbaycanca"
+  },
   "common": {
     "loading": "Loading…",
     "retry": "Try again",
@@ -83,7 +87,11 @@
     "runNow": "Run Sensitive Data Exposure",
     "totalFindings_one": "{{count}} finding in the model",
     "totalFindings_other": "{{count}} findings in the model",
-    "hg": {"servers": "Servers", "endpoints": "Endpoints", "network": "Network"},
+    "hg": {
+      "servers": "Servers",
+      "endpoints": "Endpoints",
+      "network": "Network"
+    },
     "aiMode": "Mode: {{mode}}"
   },
   "map": {
@@ -162,14 +170,22 @@
     "any": "any",
     "description": "Description"
   },
-  "conn": {"source": "Source", "target": "Target"},
+  "conn": {
+    "source": "Source",
+    "target": "Target"
+  },
   "vuln": {
     "template": "Start from the catalog (illustrative)",
     "templatePick": "Pick a catalog entry…",
     "title": "Title",
     "cveFormat": "Use the format CVE-YYYY-NNNN.",
     "maturity": "Exploit maturity",
-    "mat": {"unproven": "unproven", "poc": "proof of concept", "functional": "functional", "high": "high"},
+    "mat": {
+      "unproven": "unproven",
+      "poc": "proof of concept",
+      "functional": "functional",
+      "high": "high"
+    },
     "kind": "Kind",
     "pickPort": "Pick an open port…",
     "portNeeded": "A remote exploit needs an open port on the asset.",
@@ -228,7 +244,12 @@
     "delete": "Delete {{id}}",
     "noDependents": "Nothing else references this asset.",
     "dependentsIntro": "These items reference the asset and are removed with it:",
-    "dep": {"connections": "Connections", "firewall_rules": "Firewall rules", "vulnerabilities": "Vulnerabilities", "principals": "Accounts (rights and cached logons)"}
+    "dep": {
+      "connections": "Connections",
+      "firewall_rules": "Firewall rules",
+      "vulnerabilities": "Vulnerabilities",
+      "principals": "Accounts (rights and cached logons)"
+    }
   },
   "assetsPage": {
     "assets": "Assets",
@@ -236,7 +257,13 @@
     "rules": "Firewall rules",
     "connections": "Connections",
     "vulns": "Vulnerabilities",
-    "new": {"assets": "New asset", "principals": "New account", "rules": "New firewall rule", "connections": "New connection", "vulns": "New vulnerability"}
+    "new": {
+      "assets": "New asset",
+      "principals": "New account",
+      "rules": "New firewall rule",
+      "connections": "New connection",
+      "vulns": "New vulnerability"
+    }
   },
   "attack": {
     "setup": "Simulation",
@@ -319,12 +346,20 @@
     "thinking": "…",
     "ask": "Ask a question",
     "send": "Send",
-    "s": {"why": "Why is P1 possible?", "fix": "What should I fix first?", "score": "What is the score?", "asset": "Tell me about web-01"}
+    "s": {
+      "why": "Why is P1 possible?",
+      "fix": "What should I fix first?",
+      "score": "What is the score?",
+      "asset": "Tell me about web-01"
+    }
   },
   "rem": {
     "recommendations": "Recommendations",
     "intro": "Ordered by score gain: each blocking step is the best next fix given the ones above it.",
-    "kind": {"blocking": "blocks paths", "hardening": "defense in depth"},
+    "kind": {
+      "blocking": "blocks paths",
+      "hardening": "defense in depth"
+    },
     "standalone": "alone",
     "top3": "Select top 3",
     "applyNone": "Select fixes to apply",
@@ -366,7 +401,12 @@
     "print": "Print",
     "open": "Open",
     "revisions": "Revisions and changes",
-    "kind": {"seed": "initial", "edit": "edit", "remediation": "fix", "revert": "revert"},
+    "kind": {
+      "seed": "initial",
+      "edit": "edit",
+      "remediation": "fix",
+      "revert": "revert"
+    },
     "changes_one": "{{count}} change",
     "changes_other": "{{count}} changes",
     "initial": "Initial model: no earlier revision to compare with.",
@@ -381,14 +421,68 @@
     "next": "Next",
     "done": "Finish",
     "goThere": "Show me",
-    "twin": {"title": "The digital twin", "body": "Northwind Logistics is a virtual model: assets, links, accounts and firewall rules. Pick the twin and the revision here; every edit or fix creates a new revision."},
-    "run": {"title": "Run an attack scenario", "body": "Choose Sensitive Data Exposure and press Run simulation. The deterministic engine searches the attack graph; nothing real is touched."},
-    "replay": {"title": "Watch the replay", "body": "The primary path plays step by step: who attacks, how, through which port or vulnerability, and why it is possible. Pause, step or change the speed below."},
-    "fix": {"title": "Fix the chokepoints", "body": "Recommendations are ranked by score gain. Select the top 3 and apply them; this creates a new revision."},
-    "compare": {"title": "Compare before and after", "body": "See the score change, the blocked paths, risk per asset and what remains. You can revert at any time."}
+    "twin": {
+      "title": "The digital twin",
+      "body": "Northwind Logistics is a virtual model: assets, links, accounts and firewall rules. Pick the twin and the revision here; every edit or fix creates a new revision."
+    },
+    "run": {
+      "title": "Run an attack scenario",
+      "body": "Choose Sensitive Data Exposure and press Run simulation. The deterministic engine searches the attack graph; nothing real is touched."
+    },
+    "replay": {
+      "title": "Watch the replay",
+      "body": "The primary path plays step by step: who attacks, how, through which port or vulnerability, and why it is possible. Pause, step or change the speed below."
+    },
+    "fix": {
+      "title": "Fix the chokepoints",
+      "body": "Recommendations are ranked by score gain. Select the top 3 and apply them; this creates a new revision."
+    },
+    "compare": {
+      "title": "Compare before and after",
+      "body": "See the score change, the blocked paths, risk per asset and what remains. You can revert at any time."
+    }
   },
   "error": {
     "title": "Could not load this panel",
     "unknown": "Unexpected response from the backend ({{status}})."
+  },
+  "field": {
+    "name": "Name",
+    "ip": "IPv4 address",
+    "type": "Type",
+    "os": "Operating system",
+    "zone": "Zone",
+    "open_ports": "Open ports",
+    "software": "Software",
+    "security_config": "Security configuration",
+    "criticality": "Criticality",
+    "data_sensitivity": "Data sensitivity",
+    "source": "Source",
+    "target": "Target",
+    "kind": "Kind",
+    "label": "Label",
+    "credential_strength": "Password strength",
+    "mfa": "MFA",
+    "kerberoastable": "Kerberoastable",
+    "logged_on_assets": "Credentials cached on",
+    "permissions": "Rights",
+    "privilege": "Privilege",
+    "firewall_id": "Firewall",
+    "order": "Order",
+    "action": "Action",
+    "src": "Source",
+    "dst": "Destination",
+    "port": "Port",
+    "proto": "Protocol",
+    "description": "Description",
+    "cve": "CVE",
+    "title": "Title",
+    "cvss": "CVSS",
+    "exploit_maturity": "Exploit maturity",
+    "asset_id": "Asset",
+    "grants": "Grants",
+    "attack_ids": "ATT&CK ids",
+    "fixed_by": "Fixed by",
+    "illustrative": "Illustrative"
   }
 }

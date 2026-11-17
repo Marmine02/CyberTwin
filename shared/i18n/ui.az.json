@@ -32,7 +32,11 @@
     "markRead": "Hamısını oxunmuş say",
     "language": "Dil"
   },
-  "lang": {"en": "English", "tr": "Türkçe", "az": "Azərbaycanca"},
+  "lang": {
+    "en": "English",
+    "tr": "Türkçe",
+    "az": "Azərbaycanca"
+  },
   "common": {
     "loading": "Yüklənir…",
     "retry": "Yenidən cəhd et",
@@ -83,7 +87,11 @@
     "runNow": "Həssas Məlumatların İfşasını işə sal",
     "totalFindings_one": "Modeldə {{count}} tapıntı",
     "totalFindings_other": "Modeldə {{count}} tapıntı",
-    "hg": {"servers": "Serverlər", "endpoints": "Son nöqtələr", "network": "Şəbəkə"},
+    "hg": {
+      "servers": "Serverlər",
+      "endpoints": "Son nöqtələr",
+      "network": "Şəbəkə"
+    },
     "aiMode": "Rejim: {{mode}}"
   },
   "map": {
@@ -162,14 +170,22 @@
     "any": "istənilən",
     "description": "Təsvir"
   },
-  "conn": {"source": "Mənbə", "target": "Hədəf"},
+  "conn": {
+    "source": "Mənbə",
+    "target": "Hədəf"
+  },
   "vuln": {
     "template": "Kataloqdan başla (nümunə xarakterli)",
     "templatePick": "Kataloq qeydini seç…",
     "title": "Başlıq",
     "cveFormat": "CVE-YYYY-NNNN formatından istifadə et.",
     "maturity": "İstismarın yetkinliyi",
-    "mat": {"unproven": "sübut olunmayıb", "poc": "konsepsiya sübutu", "functional": "işlək", "high": "yüksək"},
+    "mat": {
+      "unproven": "sübut olunmayıb",
+      "poc": "konsepsiya sübutu",
+      "functional": "işlək",
+      "high": "yüksək"
+    },
     "kind": "Növ",
     "pickPort": "Açıq port seç…",
     "portNeeded": "Uzaqdan istismar üçün aktivdə açıq port lazımdır.",
@@ -228,7 +244,12 @@
     "delete": "{{id}} sil",
     "noDependents": "Bu aktivə başqa heç nə istinad etmir.",
     "dependentsIntro": "Bu elementlər aktivə istinad edir və onunla birlikdə silinir:",
-    "dep": {"connections": "Əlaqələr", "firewall_rules": "Firewall qaydaları", "vulnerabilities": "Zəifliklər", "principals": "Hesablar (hüquqlar və keşlənmiş girişlər)"}
+    "dep": {
+      "connections": "Əlaqələr",
+      "firewall_rules": "Firewall qaydaları",
+      "vulnerabilities": "Zəifliklər",
+      "principals": "Hesablar (hüquqlar və keşlənmiş girişlər)"
+    }
   },
   "assetsPage": {
     "assets": "Aktivlər",
@@ -236,7 +257,13 @@
     "rules": "Firewall qaydaları",
     "connections": "Əlaqələr",
     "vulns": "Zəifliklər",
-    "new": {"assets": "Yeni aktiv", "principals": "Yeni hesab", "rules": "Yeni firewall qaydası", "connections": "Yeni əlaqə", "vulns": "Yeni zəiflik"}
+    "new": {
+      "assets": "Yeni aktiv",
+      "principals": "Yeni hesab",
+      "rules": "Yeni firewall qaydası",
+      "connections": "Yeni əlaqə",
+      "vulns": "Yeni zəiflik"
+    }
   },
   "attack": {
     "setup": "Simulyasiya",
@@ -319,12 +346,20 @@
     "thinking": "…",
     "ask": "Sual ver",
     "send": "Göndər",
-    "s": {"why": "P1 niyə mümkündür?", "fix": "Əvvəlcə nəyi düzəltməliyəm?", "score": "Bal neçədir?", "asset": "web-01 haqqında danış"}
+    "s": {
+      "why": "P1 niyə mümkündür?",
+      "fix": "Əvvəlcə nəyi düzəltməliyəm?",
+      "score": "Bal neçədir?",
+      "asset": "web-01 haqqında danış"
+    }
   },
   "rem": {
     "recommendations": "Tövsiyələr",
     "intro": "Bal qazancına görə sıralanıb: hər bağlayan addım yuxarıdakılar tətbiq ediləndən sonra ən yaxşı növbəti düzəlişdir.",
-    "kind": {"blocking": "yolları bağlayır", "hardening": "dərin müdafiə"},
+    "kind": {
+      "blocking": "yolları bağlayır",
+      "hardening": "dərin müdafiə"
+    },
     "standalone": "tək başına",
     "top3": "İlk 3-ü seç",
     "applyNone": "Tətbiq ediləcək düzəlişləri seç",
@@ -366,7 +401,12 @@
     "print": "Çap et",
     "open": "Aç",
     "revisions": "Revizyalar və dəyişikliklər",
-    "kind": {"seed": "ilkin", "edit": "redaktə", "remediation": "düzəliş", "revert": "geri qaytarma"},
+    "kind": {
+      "seed": "ilkin",
+      "edit": "redaktə",
+      "remediation": "düzəliş",
+      "revert": "geri qaytarma"
+    },
     "changes_one": "{{count}} dəyişiklik",
     "changes_other": "{{count}} dəyişiklik",
     "initial": "İlkin model: müqayisə üçün əvvəlki revizya yoxdur.",
@@ -381,14 +421,68 @@
     "next": "İrəli",
     "done": "Bitir",
     "goThere": "Göstər",
-    "twin": {"title": "Rəqəmsal əkiz", "body": "Northwind Logistics virtual modeldir: aktivlər, əlaqələr, hesablar və firewall qaydaları. Əkizi və revizyanı buradan seç; hər redaktə və ya düzəliş yeni revizya yaradır."},
-    "run": {"title": "Hücum ssenarisini işə sal", "body": "Həssas Məlumatların İfşasını seç və Simulyasiyanı işə sal düyməsini bas. Deterministik mühərrik hücum qrafında axtarış aparır; heç bir real sistemə toxunulmur."},
-    "replay": {"title": "Təkrar oynatmaya bax", "body": "Əsas yol addım-addım oynadılır: kim hücum edir, necə, hansı port və ya zəiflik vasitəsilə və niyə mümkündür. Aşağıdan fasilə ver, addım-addım irəlilə və ya sürəti dəyiş."},
-    "fix": {"title": "Darboğazları düzəlt", "body": "Tövsiyələr bal qazancına görə sıralanıb. İlk 3-ü seçib tətbiq et; bu yeni revizya yaradır."},
-    "compare": {"title": "Əvvəl və sonranı müqayisə et", "body": "Bal dəyişikliyini, bağlanmış yolları, aktiv üzrə riski və qalanları gör. İstənilən vaxt geri qaytara bilərsən."}
+    "twin": {
+      "title": "Rəqəmsal əkiz",
+      "body": "Northwind Logistics virtual modeldir: aktivlər, əlaqələr, hesablar və firewall qaydaları. Əkizi və revizyanı buradan seç; hər redaktə və ya düzəliş yeni revizya yaradır."
+    },
+    "run": {
+      "title": "Hücum ssenarisini işə sal",
+      "body": "Həssas Məlumatların İfşasını seç və Simulyasiyanı işə sal düyməsini bas. Deterministik mühərrik hücum qrafında axtarış aparır; heç bir real sistemə toxunulmur."
+    },
+    "replay": {
+      "title": "Təkrar oynatmaya bax",
+      "body": "Əsas yol addım-addım oynadılır: kim hücum edir, necə, hansı port və ya zəiflik vasitəsilə və niyə mümkündür. Aşağıdan fasilə ver, addım-addım irəlilə və ya sürəti dəyiş."
+    },
+    "fix": {
+      "title": "Darboğazları düzəlt",
+      "body": "Tövsiyələr bal qazancına görə sıralanıb. İlk 3-ü seçib tətbiq et; bu yeni revizya yaradır."
+    },
+    "compare": {
+      "title": "Əvvəl və sonranı müqayisə et",
+      "body": "Bal dəyişikliyini, bağlanmış yolları, aktiv üzrə riski və qalanları gör. İstənilən vaxt geri qaytara bilərsən."
+    }
   },
   "error": {
     "title": "Bu panel yüklənmədi",
     "unknown": "Backend-dən gözlənilməz cavab ({{status}})."
+  },
+  "field": {
+    "name": "Ad",
+    "ip": "IPv4 ünvanı",
+    "type": "Növ",
+    "os": "Əməliyyat sistemi",
+    "zone": "Zona",
+    "open_ports": "Açıq portlar",
+    "software": "Proqram təminatı",
+    "security_config": "Təhlükəsizlik konfiqurasiyası",
+    "criticality": "Kritiklik",
+    "data_sensitivity": "Məlumat həssaslığı",
+    "source": "Mənbə",
+    "target": "Hədəf",
+    "kind": "Növ",
+    "label": "Etiket",
+    "credential_strength": "Parolun gücü",
+    "mfa": "MFA",
+    "kerberoastable": "Kerberoasting-ə həssas",
+    "logged_on_assets": "Giriş məlumatlarının keşləndiyi yerlər",
+    "permissions": "Hüquqlar",
+    "privilege": "İmtiyaz",
+    "firewall_id": "Firewall",
+    "order": "Sıra",
+    "action": "Əməliyyat",
+    "src": "Mənbə",
+    "dst": "Təyinat",
+    "port": "Port",
+    "proto": "Protokol",
+    "description": "Təsvir",
+    "cve": "CVE",
+    "title": "Başlıq",
+    "cvss": "CVSS",
+    "exploit_maturity": "İstismarın yetkinliyi",
+    "asset_id": "Aktiv",
+    "grants": "Verdiyi hüquq",
+    "attack_ids": "ATT&CK identifikatorları",
+    "fixed_by": "Düzəldən",
+    "illustrative": "Nümunə"
   }
 }

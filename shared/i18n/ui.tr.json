@@ -32,7 +32,11 @@
     "markRead": "Tümünü okundu say",
     "language": "Dil"
   },
-  "lang": {"en": "English", "tr": "Türkçe", "az": "Azərbaycanca"},
+  "lang": {
+    "en": "English",
+    "tr": "Türkçe",
+    "az": "Azərbaycanca"
+  },
   "common": {
     "loading": "Yükleniyor…",
     "retry": "Tekrar dene",
@@ -83,7 +87,11 @@
     "runNow": "Hassas Veri İfşası'nı çalıştır",
     "totalFindings_one": "Modelde {{count}} bulgu",
     "totalFindings_other": "Modelde {{count}} bulgu",
-    "hg": {"servers": "Sunucular", "endpoints": "Uç noktalar", "network": "Ağ"},
+    "hg": {
+      "servers": "Sunucular",
+      "endpoints": "Uç noktalar",
+      "network": "Ağ"
+    },
     "aiMode": "Kip: {{mode}}"
   },
   "map": {
@@ -162,14 +170,22 @@
     "any": "herhangi",
     "description": "Açıklama"
   },
-  "conn": {"source": "Kaynak", "target": "Hedef"},
+  "conn": {
+    "source": "Kaynak",
+    "target": "Hedef"
+  },
   "vuln": {
     "template": "Katalogdan başla (örnek amaçlı)",
     "templatePick": "Bir katalog kaydı seç…",
     "title": "Başlık",
     "cveFormat": "CVE-YYYY-NNNN biçimini kullan.",
     "maturity": "İstismar olgunluğu",
-    "mat": {"unproven": "kanıtlanmamış", "poc": "kavram kanıtı", "functional": "çalışır", "high": "yüksek"},
+    "mat": {
+      "unproven": "kanıtlanmamış",
+      "poc": "kavram kanıtı",
+      "functional": "çalışır",
+      "high": "yüksek"
+    },
     "kind": "Tür",
     "pickPort": "Açık bir port seç…",
     "portNeeded": "Uzaktan istismar için varlıkta açık bir port gerekir.",
@@ -228,7 +244,12 @@
     "delete": "{{id}} sil",
     "noDependents": "Bu varlığa başka hiçbir şey bağlı değil.",
     "dependentsIntro": "Bu öğeler varlığa bağlı ve onunla birlikte kaldırılır:",
-    "dep": {"connections": "Bağlantılar", "firewall_rules": "Güvenlik duvarı kuralları", "vulnerabilities": "Zafiyetler", "principals": "Hesaplar (yetkiler ve önbellekteki oturumlar)"}
+    "dep": {
+      "connections": "Bağlantılar",
+      "firewall_rules": "Güvenlik duvarı kuralları",
+      "vulnerabilities": "Zafiyetler",
+      "principals": "Hesaplar (yetkiler ve önbellekteki oturumlar)"
+    }
   },
   "assetsPage": {
     "assets": "Varlıklar",
@@ -236,7 +257,13 @@
     "rules": "Güvenlik duvarı kuralları",
     "connections": "Bağlantılar",
     "vulns": "Zafiyetler",
-    "new": {"assets": "Yeni varlık", "principals": "Yeni hesap", "rules": "Yeni güvenlik duvarı kuralı", "connections": "Yeni bağlantı", "vulns": "Yeni zafiyet"}
+    "new": {
+      "assets": "Yeni varlık",
+      "principals": "Yeni hesap",
+      "rules": "Yeni güvenlik duvarı kuralı",
+      "connections": "Yeni bağlantı",
+      "vulns": "Yeni zafiyet"
+    }
   },
   "attack": {
     "setup": "Simülasyon",
@@ -319,12 +346,20 @@
     "thinking": "…",
     "ask": "Bir soru sor",
     "send": "Gönder",
-    "s": {"why": "P1 neden mümkün?", "fix": "Önce neyi düzeltmeliyim?", "score": "Puan nedir?", "asset": "web-01 hakkında bilgi ver"}
+    "s": {
+      "why": "P1 neden mümkün?",
+      "fix": "Önce neyi düzeltmeliyim?",
+      "score": "Puan nedir?",
+      "asset": "web-01 hakkında bilgi ver"
+    }
   },
   "rem": {
     "recommendations": "Öneriler",
     "intro": "Puan kazancına göre sıralı: engelleyen her adım, üstündekiler uygulandıktan sonraki en iyi düzeltmedir.",
-    "kind": {"blocking": "yolları engeller", "hardening": "derinlemesine savunma"},
+    "kind": {
+      "blocking": "yolları engeller",
+      "hardening": "derinlemesine savunma"
+    },
     "standalone": "tek başına",
     "top3": "İlk 3'ü seç",
     "applyNone": "Uygulanacak düzeltmeleri seç",
@@ -366,7 +401,12 @@
     "print": "Yazdır",
     "open": "Aç",
     "revisions": "Revizyonlar ve değişiklikler",
-    "kind": {"seed": "ilk", "edit": "düzenleme", "remediation": "düzeltme", "revert": "geri alma"},
+    "kind": {
+      "seed": "ilk",
+      "edit": "düzenleme",
+      "remediation": "düzeltme",
+      "revert": "geri alma"
+    },
     "changes_one": "{{count}} değişiklik",
     "changes_other": "{{count}} değişiklik",
     "initial": "İlk model: karşılaştırılacak önceki revizyon yok.",
@@ -381,14 +421,68 @@
     "next": "İleri",
     "done": "Bitir",
     "goThere": "Göster",
-    "twin": {"title": "Dijital ikiz", "body": "Northwind Logistics sanal bir modeldir: varlıklar, bağlantılar, hesaplar ve güvenlik duvarı kuralları. İkizi ve revizyonu buradan seç; her düzenleme ya da düzeltme yeni bir revizyon oluşturur."},
-    "run": {"title": "Bir saldırı senaryosu çalıştır", "body": "Hassas Veri İfşası'nı seç ve Simülasyonu çalıştır'a bas. Deterministik motor saldırı grafiğinde arama yapar; gerçek hiçbir şeye dokunulmaz."},
-    "replay": {"title": "Yeniden oynatmayı izle", "body": "Birincil yol adım adım oynatılır: kim saldırıyor, nasıl, hangi port ya da zafiyetle ve neden mümkün. Aşağıdan duraklat, adım adım ilerle ya da hızı değiştir."},
-    "fix": {"title": "Darboğazları düzelt", "body": "Öneriler puan kazancına göre sıralıdır. İlk 3'ü seçip uygula; bu yeni bir revizyon oluşturur."},
-    "compare": {"title": "Önce ve sonrayı karşılaştır", "body": "Puan değişimini, engellenen yolları, varlık başına riski ve geriye kalanları gör. İstediğin zaman geri alabilirsin."}
+    "twin": {
+      "title": "Dijital ikiz",
+      "body": "Northwind Logistics sanal bir modeldir: varlıklar, bağlantılar, hesaplar ve güvenlik duvarı kuralları. İkizi ve revizyonu buradan seç; her düzenleme ya da düzeltme yeni bir revizyon oluşturur."
+    },
+    "run": {
+      "title": "Bir saldırı senaryosu çalıştır",
+      "body": "Hassas Veri İfşası'nı seç ve Simülasyonu çalıştır'a bas. Deterministik motor saldırı grafiğinde arama yapar; gerçek hiçbir şeye dokunulmaz."
+    },
+    "replay": {
+      "title": "Yeniden oynatmayı izle",
+      "body": "Birincil yol adım adım oynatılır: kim saldırıyor, nasıl, hangi port ya da zafiyetle ve neden mümkün. Aşağıdan duraklat, adım adım ilerle ya da hızı değiştir."
+    },
+    "fix": {
+      "title": "Darboğazları düzelt",
+      "body": "Öneriler puan kazancına göre sıralıdır. İlk 3'ü seçip uygula; bu yeni bir revizyon oluşturur."
+    },
+    "compare": {
+      "title": "Önce ve sonrayı karşılaştır",
+      "body": "Puan değişimini, engellenen yolları, varlık başına riski ve geriye kalanları gör. İstediğin zaman geri alabilirsin."
+    }
   },
   "error": {
     "title": "Bu panel yüklenemedi",
     "unknown": "Backend'den beklenmeyen yanıt ({{status}})."
+  },
+  "field": {
+    "name": "Ad",
+    "ip": "IPv4 adresi",
+    "type": "Tip",
+    "os": "İşletim sistemi",
+    "zone": "Bölge",
+    "open_ports": "Açık portlar",
+    "software": "Yazılım",
+    "security_config": "Güvenlik yapılandırması",
+    "criticality": "Kritiklik",
+    "data_sensitivity": "Veri hassasiyeti",
+    "source": "Kaynak",
+    "target": "Hedef",
+    "kind": "Tür",
+    "label": "Etiket",
+    "credential_strength": "Parola gücü",
+    "mfa": "MFA",
+    "kerberoastable": "Kerberoasting'e açık",
+    "logged_on_assets": "Kimlik bilgilerinin önbellekte olduğu yerler",
+    "permissions": "Yetkiler",
+    "privilege": "Yetki düzeyi",
+    "firewall_id": "Güvenlik duvarı",
+    "order": "Sıra",
+    "action": "Eylem",
+    "src": "Kaynak",
+    "dst": "Hedef",
+    "port": "Port",
+    "proto": "Protokol",
+    "description": "Açıklama",
+    "cve": "CVE",
+    "title": "Başlık",
+    "cvss": "CVSS",
+    "exploit_maturity": "İstismar olgunluğu",
+    "asset_id": "Varlık",
+    "grants": "Kazandırdığı",
+    "attack_ids": "ATT&CK kimlikleri",
+    "fixed_by": "Düzelten",
+    "illustrative": "Örnek amaçlı"
   }
 }

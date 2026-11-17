@@ -47,7 +47,11 @@ function DiffView({ twinId, number }: { twinId: number; number: number }) {
                 <li key={`c${id}`} className="text-ink-200">~ <span className="mono">{id}</span>
                   <ul className="ml-5">
                     {fields.map((f) => (
-                      <li key={f.field} className="break-words"><span className="text-ink-400">{f.field}:</span> <s className="text-rose-300">{short(f.before)}</s> → <span className="text-emerald-300">{short(f.after)}</span></li>
+                      <li key={f.field} className="break-words">
+                        <span className="text-ink-400">{t(`ui.field.${f.field}`)}:</span>{' '}
+                        {/* values are model data, shown as stored */}
+                        <s className="mono text-rose-300" translate="no">{short(f.before)}</s> → <span className="mono text-emerald-300" translate="no">{short(f.after)}</span>
+                      </li>
                     ))}
                   </ul>
                 </li>

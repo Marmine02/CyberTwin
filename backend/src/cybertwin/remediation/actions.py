@@ -194,14 +194,9 @@ def _restrict_port(c: TwinContent, a: RestrictPort) -> TwinContent:
         exact = r.dst == f"asset:{asset.id}" and r.port == a.port
         open_src = r.src in ("any", "zone:internet")
         if r.action is RuleAction.ALLOW and exact and open_src:
-            new_rules.append(
-                r.model_copy(
-                    update={
-                        "src": "zone:mgmt",
-                        "description": (r.description + " (restricted to mgmt)")[:120],
-                    }
-                )
-            )
+            # Only the source changes; the description is user data and stays as written
+            # (the revision note and diff already record the restriction, in every language).
+            new_rules.append(r.model_copy(update={"src": "zone:mgmt"}))
             changed = True
         else:
             new_rules.append(r)
