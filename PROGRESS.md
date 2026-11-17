@@ -41,12 +41,22 @@
   (`frontend/scripts/verify-desktop.mjs`: 25.0 -> 100.0 -> revert), window closed, 0 python/uvicorn
   and 0 Edge processes left. Error paths tested: port in use, missing uv, backend crash.
 
-## In progress
-- Phase 10: full E2E suite (CRUD, guided demo, every button, i18n fragments, clipping, axe,
-  layouts), 3 green runs, screenshots, visual QA.
+- Phase 10 (part): full E2E suite in `frontend/e2e` (demo-flow, no-path, crud, guided-tour, buttons,
+  quality: TR/AZ English-fragment detector with negative control, clipping, axe 0 serious/critical
+  on 8 pages x 3 languages, layouts 1024/1280/1440, label >= 11 px, glyphs, build secrets).
+  One full run: 41 passed. Bugs it found and fixed: effect cleanup crash (destroy_ is not a function),
+  notifications button accessible name, English diff field names + English suffix written into rule
+  descriptions by restrict_port.
+- docs/ARCHITECTURE.md written; `frontend/scripts/az-review.mjs` written (not run yet).
+
+## In progress (resume here)
+- Commit the uncommitted work (E2E suite + fixes + ARCHITECTURE.md + az-review script), then
+  `powershell -ExecutionPolicy Bypass -File scripts\e2e.ps1 -Runs 3` (3 green runs required).
+- Then screenshots of all pages EN/TR/AZ to docs/screenshots (`frontend/scripts/pages.mjs`), visual QA,
+  push (end of phase 10).
 
 ## Next
-- Phase 11: docs + final report.
+- Phase 11: run az-review.mjs, finish README (screenshots), ENGINE/API/KNOWN_GAPS review, final report.
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.
