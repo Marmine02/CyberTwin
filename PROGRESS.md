@@ -18,11 +18,15 @@
   (demo reset, edits as revisions, run, apply, revert, restore), `services/edits.py` (CRUD with
   cascade + dependents). 65 backend tests, 94% total coverage.
 
+- Phase 5: FastAPI app (`api/app.py`, routes twins/simulation/system), error envelope, CORS lock,
+  SPA serving via FRONTEND_DIST, `python -m cybertwin` entry point. 77 backend tests. docs/API.md.
+
 ## In progress
-- Phase 5: API (`backend/src/cybertwin/api`), error envelope, docs/API.md.
+- Phase 6: AI service (providers via env, structured output + placeholders, post-checks,
+  deterministic EN/TR/AZ fallback, SSE, cache) + shared i18n catalogs + reports.
 
 ## Next
-- Phase 6: AI service.
+- Phase 7: i18n foundation + neon design system -> VISUAL CHECKPOINT (wait for owner).
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.
