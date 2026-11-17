@@ -55,9 +55,27 @@ interpreter, or build that package from source as pure Python.
 
 ## Running
 
-*Desktop app mode, launcher and screenshots are documented at the end of the project (phases 9-11).*
+### As a desktop app (how the owner runs it)
+1. Once: `powershell -ExecutionPolicy Bypass -File scripts\install-shortcut.ps1` creates the Desktop
+   shortcut **CyberTwin** with the app icon.
+2. Double-click **CyberTwin** on the Desktop. The launcher (`scripts\CyberTwin.ps1`, also reachable
+   through `CyberTwin.bat`):
+   - prepares the backend environment with `uv sync` if it is missing;
+   - builds the frontend if `frontend\dist` is missing or older than the sources (npm runs through
+     `cmd.exe`, so Vite's warnings on stderr cannot break Windows PowerShell 5.1);
+   - starts the backend on the first free port from 8765 (`python -m cybertwin`, which also serves the
+     built frontend: one process, one port) and waits for `/api/v1/health`;
+   - opens Microsoft Edge (fallback: Chrome) with `--app` and its own profile in
+     `%LOCALAPPDATA%\CyberTwin\browser-profile`; the window title is "CyberTwin";
+   - when the window is closed, stops the backend process tree. No uvicorn is left running.
+3. Data: `%LOCALAPPDATA%\CyberTwin\data\cybertwin.db`. Logs: `%LOCALAPPDATA%\CyberTwin\logs\`
+   (`launcher.log`, `backend.log`, `backend.err.log`, `frontend-build.log`).
 
-Development:
+Errors are shown in a dialog with a specific message: port in use (with the process holding it),
+`uv` or Node.js missing, frontend build failed, backend crashed during start-up (exit code, log path
+and the last log lines). `CYBERTWIN_PORT=<n>` forces a port.
+
+### Development
 ```powershell
 # terminal 1 - backend on 127.0.0.1:8765
 cd backend; uv run python -m cybertwin --port 8765

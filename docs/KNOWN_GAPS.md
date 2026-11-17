@@ -21,6 +21,15 @@ Stated bluntly. Updated as work progresses.
   contract-tested at the HTTP level only (respx for ollama/openai_compatible, an `httpx2`
   MockTransport for the Anthropic SDK). **None of them is tested on a real provider.**
 
+## Desktop launcher
+- Two switches exist only for automated verification: `CYBERTWIN_CDP_PORT` (lets a script drive the
+  real app window over the Chrome DevTools Protocol) and `CYBERTWIN_NO_DIALOG` (prints errors instead
+  of showing a blocking dialog). Both are off unless set in the environment.
+- No single-instance lock: double-clicking the shortcut twice starts a second backend on the next
+  free port with a second window. Both shut down cleanly on close, but they share the same database
+  file, so concurrent edits from both windows are not coordinated.
+- The window is a Chromium `--app` window, not a native shell; Edge/Chrome must be installed.
+
 ## AI analyst
 - **Anthropic: structured outputs instead of forced tool use. Documented, NOT verified live.** The
   spec asks for forced tool use. Source: Anthropic docs,

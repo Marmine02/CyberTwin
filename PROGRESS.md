@@ -35,11 +35,18 @@
   dialogs, forms with validation, replay (`lib/replay.ts`). First E2E specs (demo flow, no-path)
   green against real backend + vite preview + Edge (`frontend/playwright.config.ts`).
 
+- Phase 9: `CyberTwin.bat` -> `scripts/CyberTwin.ps1`, `scripts/install-shortcut.ps1`,
+  `assets/cybertwin.ico` (made by `frontend/scripts/make-icon.mjs`). Verified for real on 2026-11-17:
+  shortcut installed, app opened from the Desktop shortcut, demo driven in that window over CDP
+  (`frontend/scripts/verify-desktop.mjs`: 25.0 -> 100.0 -> revert), window closed, 0 python/uvicorn
+  and 0 Edge processes left. Error paths tested: port in use, missing uv, backend crash.
+
 ## In progress
-- Phase 9: desktop app mode (CyberTwin.bat -> scripts/CyberTwin.ps1, install-shortcut.ps1, icon).
+- Phase 10: full E2E suite (CRUD, guided demo, every button, i18n fragments, clipping, axe,
+  layouts), 3 green runs, screenshots, visual QA.
 
 ## Next
-- Phase 10: full E2E + visual QA; Phase 11: docs + final report.
+- Phase 11: docs + final report.
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.

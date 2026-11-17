@@ -1,4 +1,4 @@
-# Runs every static check and unit test suite. Full output goes to logs/check-*.log;
+﻿# Runs every static check and unit test suite. Full output goes to logs/check-*.log;
 # the console shows only a pass/fail line per step.
 #   powershell -ExecutionPolicy Bypass -File scripts\check.ps1 [-Backend] [-Frontend]
 param([switch]$Backend, [switch]$Frontend)
