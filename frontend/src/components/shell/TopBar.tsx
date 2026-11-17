@@ -52,13 +52,15 @@ function Notifications() {
   return (
     <Popover id="notif-pop" width={380} button={({ open, toggle, id }) => (
       <button type="button" className="relative grid h-10 w-10 place-items-center rounded-xl text-ink-200 hover:text-cyan"
-        aria-label={`${t('ui.top.notifications')}${unread ? ` (${t('ui.top.notificationsUnread', { count: unread })})` : ''}`}
         aria-expanded={open} aria-controls={id} onClick={toggle} data-testid="notifications-button">
-        <Bell size={21} />
+        {/* The accessible name comes from the content, so it always includes the visible count. */}
+        <Bell size={21} aria-hidden="true" />
+        <span className="sr-only">{t('ui.top.notifications')}</span>
         {unread > 0 && (
           <span className="absolute right-1 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-magenta px-1 text-[11px] font-bold text-ink-950 shadow-[0_0_10px_#e879f9]"
             data-testid="notifications-badge">{unread}</span>
         )}
+        {unread > 0 && <span className="sr-only">{t('ui.top.notificationsUnread', { count: unread })}</span>}
       </button>
     )}>
       {() => (
