@@ -14,11 +14,15 @@
   (`remediation/actions.py`). Northwind SDE score 24.98, P1 via idp-01, top-3 recs -> 100,
   residual keeps svc-web admin right. 61 tests, 96% coverage on engine/remediation. docs/ENGINE.md.
 
+- Phase 4: `remediation/compare.py` (blocked/reduced/new paths, per-asset delta), `services/core.py`
+  (demo reset, edits as revisions, run, apply, revert, restore), `services/edits.py` (CRUD with
+  cascade + dependents). 65 backend tests, 94% total coverage.
+
 ## In progress
-- Phase 4: remediation service (apply -> new revision -> compare before/after; revert).
+- Phase 5: API (`backend/src/cybertwin/api`), error envelope, docs/API.md.
 
 ## Next
-- Phase 5: API.
+- Phase 6: AI service.
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.
