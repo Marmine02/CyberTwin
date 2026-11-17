@@ -31,5 +31,8 @@ Full product spec: `docs/SPEC.md` (source of truth). Resume state: `PROGRESS.md`
 6. Neon design (spec §10) is the visual target; never tone down glow, gradient borders, particles, palette.
 
 ## Windows notes
+- Push auth: repo-local credential helper `!gh auth git-credential` (owner logged in as Marmine02). Set `$env:GIT_TERMINAL_PROMPT='0'` before push so nothing hangs on a GUI prompt.
+- Smart App Control is enforced: backend tools run as `uv run python -m <tool>`, never the venv `.exe` shims. Run `scripts\check.ps1` for all checks.
+- Add `$env:USERPROFILE\.local\bin` to PATH for `uv` in each shell.
 - Shell is Windows PowerShell 5.1: no `&&`; run npm via `cmd /c` when stderr warnings matter.
 - Python 3.12 via `uv` only.

@@ -10,11 +10,15 @@
   integrity checks, canonical JSON + hash, diff), SQLAlchemy tables + Alembic `0001_initial`,
   repository layer, Northwind seed (`seed/northwind.py`). 19 tests on real temp SQLite + migrations.
 
+- Phase 3: engine (`engine/`: network, findings, graph, scenarios, simulate) + typed actions
+  (`remediation/actions.py`). Northwind SDE score 24.98, P1 via idp-01, top-3 recs -> 100,
+  residual keeps svc-web admin right. 61 tests, 96% coverage on engine/remediation. docs/ENGINE.md.
+
 ## In progress
-- Phase 3: simulation engine (`backend/src/cybertwin/engine`).
+- Phase 4: remediation service (apply -> new revision -> compare before/after; revert).
 
 ## Next
-- Phase 4: remediation engine.
+- Phase 5: API.
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.
