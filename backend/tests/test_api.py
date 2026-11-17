@@ -69,10 +69,14 @@ def test_demo_flow_simulate_apply_revert(client: TestClient) -> None:
     assert run.status_code == 201
     r = run.json()
     assert 22 <= r["score"] <= 28
-    primary = r["result"]["paths"][0]["assets"]
-    assert primary[:3] == ["inet", "fw-edge", "web-01"]
-    assert primary[-1] == "customer-db"
-    assert "idp-01" in primary
+    assert r["result"]["paths"][0]["assets"] == [
+        "inet",
+        "fw-edge",
+        "web-01",
+        "fw-int",
+        "idp-01",
+        "customer-db",
+    ]
     again = client.post(f"{V}/twins/{tid}/simulations", json={"scenario": SDE}).json()
     assert again["result_hash"] == r["result_hash"]
     assert again["id"] != r["id"]

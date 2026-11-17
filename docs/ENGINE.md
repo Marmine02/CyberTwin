@@ -77,7 +77,11 @@ path in the list even if it would fall outside the top 10.
 
 ### Worked example: Northwind, Sensitive Data Exposure (r1)
 
-Primary path P1 (Internet → fw-edge → web-01 → fw-int → idp-01 → customer-db):
+Primary path P1, asserted exactly in the backend and E2E tests:
+**Internet (`inet`) → `fw-edge` → `web-01` → `fw-int` → `idp-01` → `customer-db`**.
+The spec's expected path "Internet → fw-edge → web-01 → idp-01 → customer-db" is this path; `fw-int`
+appears because the Kerberos traffic from web-01 to idp-01 crosses the internal firewall (rule
+`int-10`), and the path lists every firewall a network hop crosses.
 
 | Step | Technique | p |
 |---|---|---|

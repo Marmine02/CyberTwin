@@ -15,6 +15,7 @@ from cybertwin.engine.simulate import quick_score, simulate
 from cybertwin.remediation.actions import apply_actions, parse_action
 
 SDE = "sensitive_data_exposure"
+PRIMARY_PATH = ["inet", "fw-edge", "web-01", "fw-int", "idp-01", "customer-db"]
 
 
 def _is_subsequence(needle: list[str], hay: list[str]) -> bool:
@@ -134,6 +135,8 @@ def test_sensitive_data_exposure_demo(northwind: TwinContent) -> None:
     p1 = r["paths"][0]
     assert r["primary_path"] == "P1"
     assert p1["goal"] == "DATA:customer-db"
+    # Exact primary path (fw-int is crossed by the web-01 -> idp-01:88 hop).
+    assert p1["assets"] == PRIMARY_PATH
     assert _is_subsequence(["inet", "fw-edge", "web-01", "idp-01", "customer-db"], p1["assets"])
     assert [s["technique"] for s in p1["steps"]] == [
         "network_reach",

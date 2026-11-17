@@ -22,10 +22,20 @@ Stated bluntly. Updated as work progresses.
   MockTransport for the Anthropic SDK). **None of them is tested on a real provider.**
 
 ## AI analyst
-- **Anthropic: structured outputs instead of forced tool use.** The spec asks for forced tool use,
-  but current Claude models (default `claude-opus-5-5`) reject `tool_choice: tool` with a 400. The
-  adapter uses the official SDK with `output_config.format` (JSON schema), which gives the same
-  guarantee. Server-side refusal fallback (`fallbacks: "default"`) is enabled.
+- **Anthropic: structured outputs instead of forced tool use. Documented, NOT verified live.** The
+  spec asks for forced tool use. Source: Anthropic docs,
+  https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools, section
+  "Controlling Claude's output › Forcing tool use": *"Not every model and setting supports forced
+  tool use. Where it isn't supported, `tool_choice: {"type": "any"}` and `tool_choice: {"type":
+  "tool", ...}` fail"*; the table row for "Claude Opus 5.5" (among others) says *"`any` and `tool`
+  return a 400 error"*. The same is stated in the `claude-api` reference bundled with Claude Code.
+  This behaviour was **not** checked against the live API (no API key here). Based on that
+  documentation the adapter uses the official SDK with
+  `output_config.format` (JSON schema) instead, which constrains output the same way. If the
+  assumption is wrong, switching back is a small change in `ai/providers.py`. The request also sets
+  the beta header `server-side-fallback-2026-07-01` and `fallbacks: "default"`, taken from the same
+  documentation and equally unverified. The SDK version used (2.9.0) sends the key as
+  `Authorization: Bearer`; this was observed in the HTTP contract test, not against the real API.
 - **Streaming is per section, not per token.** The LLM answer must be complete before placeholders
   can be checked and filled, so `/ai/explain` streams `meta` immediately, then the validated
   sections one by one. Chat streams the answer sentence by sentence after validation.
