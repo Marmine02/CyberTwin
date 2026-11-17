@@ -19,6 +19,8 @@ export interface TopologyMapProps {
   result?: SimResult | null
   /** path whose edges/nodes are highlighted red */
   pathId?: string | null
+  /** explicit highlighted asset sequence (replay reveals the path step by step); overrides pathId */
+  pathAssets?: string[] | null
   /** assets compromised so far (replay); defaults to the result's compromised assets */
   compromised?: string[] | null
   /** asset currently being attacked (replay); pulses */
@@ -27,6 +29,8 @@ export interface TopologyMapProps {
   types?: AssetType[] | null
   /** nodes the camera should frame (replay follow); default: all visible */
   focus?: string[] | null
+  /** small overview maps: names hidden (shown on hover) so the whole graph can fit */
+  compact?: boolean
   showMinimap?: boolean
   showControls?: boolean
   showDerived?: boolean
@@ -43,13 +47,11 @@ function defaultPosition(i: number, zone: Zone): { x: number; y: number } {
   return { x: ZONE_COL[zone] * 240, y: 520 + i * 150 }
 }
 
-function pathEdges(result: SimResult | null | undefined, pathId: string | null | undefined): Set<string> {
+function pathEdges(assets: string[]): Set<string> {
   const set = new Set<string>()
-  const p = result?.paths.find((x) => x.id === pathId)
-  if (!p) return set
-  for (let i = 0; i + 1 < p.assets.length; i++) {
-    const a = p.assets[i]
-    const b = p.assets[i + 1]
+  for (let i = 0; i + 1 < assets.length; i++) {
+    const a = assets[i]
+    const b = assets[i + 1]
     if (a && b) set.add(`${a}>${b}`)
   }
   return set
@@ -61,8 +63,12 @@ function MapInner(props: TopologyMapProps) {
   const flow = useReactFlow()
   const wrapper = useRef<HTMLDivElement>(null)
 
-  const onPathAssets = useMemo(() => new Set(result?.paths.find((p) => p.id === pathId)?.assets ?? []), [result, pathId])
-  const onPathPairs = useMemo(() => pathEdges(result, pathId), [result, pathId])
+  const pathSeq = useMemo(
+    () => props.pathAssets ?? result?.paths.find((p) => p.id === pathId)?.assets ?? [],
+    [props.pathAssets, result, pathId],
+  )
+  const onPathAssets = useMemo(() => new Set(pathSeq), [pathSeq])
+  const onPathPairs = useMemo(() => pathEdges(pathSeq), [pathSeq])
 
   const stateOf = useCallback((id: string, type: AssetType): NodeState => {
     if (!result) return 'neutral'
@@ -88,7 +94,7 @@ function MapInner(props: TopologyMapProps) {
         type: 'neon' as const,
         position: { x: pos.x, y: pos.y },
         data: {
-          asset: a, state, onPath: onPathAssets.has(a.id), dim: !visible(a), active: props.activeAsset === a.id,
+          asset: a, state, onPath: onPathAssets.has(a.id), dim: !visible(a), active: props.activeAsset === a.id, compact: !!props.compact,
           stateLabel: state === 'neutral' ? '' : t(`ui.state.${state}`),
         },
         width: NODE_W,
@@ -97,7 +103,8 @@ function MapInner(props: TopologyMapProps) {
         connectable: !!editable,
       }
     })
-  }, [model, stateOf, onPathAssets, visible, props.activeAsset, editable, t])
+  }, [model, stateOf, onPathAssets, visible, props.activeAsset, props.compact, editable, t])
+  const minZoom = props.compact ? 0.2 : MIN_ZOOM
 
   const [nodes, setNodes, onNodesChange] = useNodesState<NeonNodeType>(builtNodes)
   useEffect(() => setNodes(builtNodes), [builtNodes, setNodes])
@@ -136,8 +143,8 @@ function MapInner(props: TopologyMapProps) {
   const fit = useCallback(() => {
     const ids = focus?.length ? focus : model.assets.filter(visible).map((a) => a.id)
     if (!ids.length) return
-    void flow.fitView({ nodes: ids.map((id) => ({ id })), padding: 0.18, minZoom: MIN_ZOOM, maxZoom: 1.25, duration: 450 })
-  }, [flow, focus, model.assets, visible])
+    void flow.fitView({ nodes: ids.map((id) => ({ id })), padding: 0.18, minZoom, maxZoom: 1.25, duration: 450 })
+  }, [flow, focus, model.assets, visible, minZoom])
 
   useEffect(() => {
     const h = window.setTimeout(fit, 60)
@@ -178,14 +185,14 @@ function MapInner(props: TopologyMapProps) {
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
         onEdgeClick={(_, e) => props.onEdgeClick?.(e.id)}
-        minZoom={MIN_ZOOM}
+        minZoom={minZoom}
         maxZoom={2}
         nodesDraggable={!!editable}
         nodesConnectable={!!editable}
         elementsSelectable
         proOptions={{ hideAttribution: true }}
         fitView
-        fitViewOptions={{ padding: 0.18, minZoom: MIN_ZOOM }}
+        fitViewOptions={{ padding: 0.18, minZoom }}
       >
         <Background variant={BackgroundVariant.Dots} gap={28} size={1.2} color="rgb(103 232 249 / 0.14)" />
         {props.showControls && <Controls showInteractive={false} position="bottom-right" />}

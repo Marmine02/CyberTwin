@@ -95,6 +95,18 @@ def fmt_pct(lang: str, value: float) -> str:
     return f"%{num}" if normalize_lang(lang) == "tr" else f"{num}%"
 
 
+def fmt_datetime(lang: str, iso: str) -> str:
+    """ISO 8601 UTC -> 'DD/MM/YYYY HH:MM UTC' (en) or 'DD.MM.YYYY HH:MM UTC' (tr, az)."""
+    from datetime import datetime
+
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except ValueError:
+        return iso
+    sep = "/" if normalize_lang(lang) == "en" else "."
+    return dt.strftime(f"%d{sep}%m{sep}%Y %H:%M UTC")
+
+
 def fmt_list(lang: str, items: list[str]) -> str:
     if len(items) <= 1:
         return "".join(items)

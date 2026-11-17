@@ -5,6 +5,7 @@ import { api } from '../../api/client'
 import { qk, useCurrentTwin, useEvents, useRevisions, useTwins } from '../../api/hooks'
 import { LANGS, type Lang } from '../../i18n'
 import { fmtDateTime } from '../../i18n/format'
+import { noteText } from '../../lib/notes'
 import { useApp } from '../../store/app'
 import { useTour } from '../../store/tour'
 import { Popover } from '../ui/Popover'
@@ -70,7 +71,7 @@ function Notifications() {
           <ul className="flex flex-col gap-1 overflow-y-auto pr-1">
             {data?.items.length ? data.items.map((e) => (
               <li key={e.id} className={`rounded-lg px-2 py-1.5 text-sm ${e.read ? 'text-ink-300' : 'bg-cyan/6 text-ink-100'}`}>
-                <div>{t(e.code, e.params)}</div>
+                <div>{noteText(t, { code: e.code, params: e.params })}</div>
                 <div className="text-[11px] text-ink-400">{fmtDateTime(lang, e.created_at)}</div>
               </li>
             )) : <li className="px-2 py-3 text-sm text-ink-300">{t('ui.top.noNotifications')}</li>}

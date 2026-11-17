@@ -166,6 +166,6 @@ async def compare(twin_id: int, body: CompareBody, repo: Repo) -> dict[str, Any]
         "revision_b": b.row.number,
         "scenario": body.scenario,
         "comparison": compare_results(ra, rb, graph),
-        "paths_a": ra["paths"],
-        "paths_b": rb["paths"],
+        "result_a": ra,
+        "result_b": rb,
     }

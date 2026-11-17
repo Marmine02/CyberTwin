@@ -1,6 +1,8 @@
 import { Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useTwins } from '../../api/hooks'
+import { GuidedTour } from '../GuidedTour'
+import { Toaster } from '../ui/Toaster'
 import { IconRail } from './IconRail'
 import { TopBar } from './TopBar'
 
@@ -19,6 +21,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <Toaster />
+      <GuidedTour />
     </div>
   )
 }

@@ -6,7 +6,16 @@ from html import escape
 from typing import Any
 
 from cybertwin.ai.narrative import Lookup, finding_text, route_text
-from cybertwin.i18n.catalog import fmt_pct, fmt_prob, fmt_score, goal_label, render_action, render_message, t
+from cybertwin.i18n.catalog import (
+    fmt_datetime,
+    fmt_pct,
+    fmt_prob,
+    fmt_score,
+    goal_label,
+    render_action,
+    render_message,
+    t,
+)
 
 
 def build_report(
@@ -23,7 +32,7 @@ def build_report(
             "revision": run["revision"],
             "run_id": run["id"],
             "scenario": t(lang, f"scenario.{result['scenario']}.name"),
-            "created_at": run["created_at"],
+            "created_at": fmt_datetime(lang, run["created_at"]),
             "result_hash": run["result_hash"],
             "entry": lk.asset(result["entry"]["asset_id"]),
         },

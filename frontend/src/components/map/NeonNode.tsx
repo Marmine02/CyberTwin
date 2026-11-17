@@ -10,6 +10,7 @@ export type NeonNodeData = {
   dim: boolean
   active: boolean
   stateLabel: string
+  compact?: boolean
 }
 export type NeonNodeType = Node<NeonNodeData, 'neon'>
 
@@ -27,6 +28,7 @@ function NeonNodeImpl({ data, selected }: NodeProps<NeonNodeType>) {
       data-state={state}
       data-on-path={onPath ? 'true' : 'false'}
       aria-label={`${asset.name} ${asset.ip} ${data.stateLabel}`}
+      title={data.compact ? `${asset.name} · ${asset.ip}` : undefined}
     >
       {/* state glow behind the pedestal */}
       <div
@@ -57,13 +59,13 @@ function NeonNodeImpl({ data, selected }: NodeProps<NeonNodeType>) {
         <ellipse cx="56" cy="18" rx="30" ry="8" fill="none" stroke={glow} strokeOpacity={0.85} strokeWidth="1.2" />
         <ellipse cx="56" cy="17" rx="16" ry="4" fill={glow} fillOpacity={0.35} />
       </svg>
-      <div className="mt-0.5 flex max-w-full flex-col items-center rounded-md bg-ink-950/70 px-1.5 py-0.5">
+      {data.compact ? <span className="sr-only">{asset.name}</span> : <div className="mt-0.5 flex max-w-full flex-col items-center rounded-md bg-ink-950/70 px-1.5 py-0.5">
         <div className="line-clamp-2 max-w-full break-words text-center font-display font-semibold leading-[1.05] text-ink-100"
           style={{ fontSize: LABEL_PX + 1, textShadow: `0 0 10px ${base}88` }} title={asset.name} translate="no">
           {asset.name}
         </div>
         <div className="font-mono leading-tight text-ink-300" style={{ fontSize: LABEL_PX }} translate="no">{asset.ip}</div>
-      </div>
+      </div>}
       {selected && <div className="pointer-events-none absolute inset-0 rounded-2xl border border-cyan/60" />}
       <Handle type="target" position={Position.Top} id="t" style={{ left: '50%', top: 62 }} />
       <Handle type="source" position={Position.Bottom} id="s" style={{ left: '50%', top: 62 }} />
