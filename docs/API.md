@@ -1,112 +1,119 @@
-# CyberTwin API (v1)
+# API (v1)
 
-Base path: `/api/v1`. JSON everywhere. Interactive OpenAPI docs: `/api/v1/docs`.
-The API only computes on the stored virtual model; nothing is scanned or contacted.
+Base path `/api/v1`. Interactive OpenAPI docs: `http://localhost:8000/docs`.
 
-## Error envelope
-Every error, including validation errors, unknown routes and unexpected failures:
+## Errors
+
+Every error uses one envelope:
+
 ```json
-{"error": {"code": "validation.integrity",
-           "message": "The change would make the model inconsistent.",
-           "details": {"errors": [{"loc": ["connections"], "msg": "unknown_asset:connection:c-x:ghost"}]},
-           "i18n": {"code": "error.validation.integrity", "params": {"errors": [...]}}}}
+{ "error": { "code": "port_not_open", "message": "Asset 'web-01' has no port 3389 open; cannot create rule",
+             "details": {"asset_id": "web-01", "port": 3389},
+             "i18n": {"code": "err.rule_port_closed", "params": {"asset": "web-01", "port": 3389}} } }
 ```
-| Status | Codes (examples) |
+
+`message` is always English. `i18n` (present on domain errors) is the same text as a catalog message: render it with
+`GET /api/v1/i18n/engine`, the same way as engine output. Count-dependent texts use i18next plural keys
+(`code_one` / `code_other`). Pydantic validation errors (`validation_error`) have no `i18n` and stay English.
+
+| Status | Codes |
 |---|---|
-| 404 | `not_found` (entity + id in params) |
-| 409 | `conflict.duplicate_id`, `revision.no_change`, `remediation.already_reverted`, `remediation.revert_not_head` |
-| 422 | `validation.request` (field + reason), `validation.integrity`, `validation.id_immutable`, `scenario.*`, `remediation.*`, `compare.same_revision` |
-| 500 | `internal` (exception type; details in the backend log) |
+| 404 | `twin_not_found`, `revision_not_found`, `asset_not_found`, `principal_not_found`, `vuln_not_found`, `connection_not_found`, `rule_not_found`, `simulation_not_found`, `permission_not_found`, `not_found` |
+| 409 | `duplicate_id`, `conflict` (incl. optimistic-concurrency mismatch), `in_use`, `no_op`, `no_parent` |
+| 422 | `validation_error` (Pydantic; message lists `field: reason`), `invalid_snapshot`, `invalid_params`, `port_not_open`, `not_patchable`, `not_a_reduction`, `duplicate_action`, `invalid_action` |
+| 500 | `internal_error` (exception type + path; details in the server log) |
 
-CORS: only the configured origins (`CYBERTWIN_CORS_ORIGINS`; default Vite dev/preview on 127.0.0.1).
+CORS allows only `CORS_ORIGINS` (default `http://localhost:5173`).
 
-## System
+## Translatable messages
+
+Engine and system text is returned as `{"code": "...", "params": {...}}` (params may be strings, numbers, nested
+messages or lists). Fields: `PathStep.reason`, `TimelineEvent.label`, `AttackPath.goal_label`, `Finding.title`,
+`ResidualFinding.title`, `Comparison.changes[]`, `Recommendation.title` / `rationale`, `RevisionOut.note_msg`,
+`Event.payload.message`, `Vulnerability.title_i18n` (seed/catalog titles; dropped when the user edits `title`).
+
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/health` | `{status, version, simulation_only: true, twins, ai_provider}` |
-| POST | `/demo/reset` | deletes the Northwind twin (runs, remediations, events) and seeds it again |
-| GET | `/events?limit=` | real application events (runs, remediations, edits, resets): `{unread, items}` |
-| POST | `/events/read` | mark all as read |
-| GET | `/vulns/catalog` | vulnerability templates (all `illustrative: true`) |
-| GET | `/scenarios` | scenario ids + accepted params |
-| GET | `/remediations/actions` | remediation action types |
+| GET | `/i18n/engine` | `{"en": {code: template}, "tr": {...}}`, i18next `{{param}}` syntax |
 
-## Twins and revisions
-Revisions are immutable and numbered. Every edit, remediation, revert or restore creates a new one.
+## Twins & revisions
+
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/twins` | list with `head_revision` |
-| GET | `/twins/{id}` | |
-| GET | `/twins/{id}/revisions` | newest first: `number, parent, kind (seed/edit/remediation/revert), note {code, params}, changes` |
-| GET | `/twins/{id}/revisions/{n}` | revision + full diff + model |
-| GET | `/twins/{id}/revisions/{n}/diff?against=m` | structural diff (default: against the parent) |
-| POST | `/twins/{id}/revisions/{n}/restore` | new revision with the content of r{n} |
-| GET | `/twins/{id}/model?revision=n` | assets (+ derived `vulnerability_ids`, `risk_score`), connections, derived permission connections, principals, firewall rules, vulnerabilities, policy, positions |
-| PUT | `/twins/{id}/positions` | `{positions: {asset_id: {x, y}}}`; never creates a revision |
+| GET | `/twins` | list |
+| POST | `/twins` | `{id, name, clone_from?}` → creates r1 |
+| GET | `/twins/{id}?revision=n` | `{twin, revision, snapshot, latest_simulation_id}`; positions merged; `risk_score` filled from the latest run on that revision |
+| DELETE | `/twins/{id}` | |
+| GET | `/twins/{id}/revisions` | newest first |
+| GET | `/twins/{id}/revisions/{n}` | snapshot + stored diff vs parent |
+| GET | `/twins/{id}/diff?base=a&target=b` | structural diff (added/removed/changed per collection + segmented zones) |
+| POST | `/revisions/{revision_id}/revert` | new revision restoring the parent of `revision_id` |
+| PUT | `/twins/{id}/layout` | `{positions: {asset_id: {x, y}}}`, not revisioned |
 
-## CRUD (always on the head revision; each mutation returns `{revision, item | affected}`)
-`assets`, `connections`, `principals`, `firewall-rules`, `vulnerabilities`:
-| Method | Path |
-|---|---|
-| GET | `/twins/{id}/{collection}?revision=n` |
-| GET | `/twins/{id}/{collection}/{item_id}` |
-| POST | `/twins/{id}/{collection}` (201) |
-| PUT | `/twins/{id}/{collection}/{item_id}` (id is immutable) |
-| DELETE | `/twins/{id}/{collection}/{item_id}` (deleting an asset cascades; `affected` lists what was removed) |
-| GET | `/twins/{id}/assets/{asset_id}/dependents` (what a delete would remove) |
+## Entity CRUD (each write creates a revision; optional `?expected_revision=n`)
+
+`/twins/{id}/assets`, `/assets/{asset_id}` (GET/POST/PUT/DELETE), `/assets/{asset_id}/impact` (what a delete removes),
+`/twins/{id}/connections[/{cid}]`, `/twins/{id}/principals[/{pid}]`, `/twins/{id}/firewall-rules[/{rid}]`,
+`/twins/{id}/vulnerabilities[/{vid}]`, `GET /vulnerabilities/catalog` (templates; CVE ids are illustrative `CVE-2099-*`).
+
+Write responses: `{revision, entity}`. Validation examples: IPv4, unique port/proto per asset, version string pattern,
+firewall rule shape (exactly one src and one dst), "rule allows a port the destination does not listen on",
+vulnerability port must be open, duplicate connections, unknown references.
 
 ## Simulation
-| Method | Path | Notes |
-|---|---|---|
-| POST | `/twins/{id}/simulations` | `{scenario, revision?, params?: {foothold}}` → run with the full result (201) |
-| GET | `/twins/{id}/simulations?limit=` | run history (summaries) |
-| GET | `/twins/{id}/simulations/latest?scenario=&revision=` | latest matching run or `null` |
-| GET | `/simulations/{run_id}` | full run |
-| GET | `/twins/{id}/recommendations?scenario=&revision=&foothold=` | recommendations, chokepoints, findings, residual exposure |
-| POST | `/twins/{id}/compare` | `{scenario, revision_a, revision_b, params?}` → `{comparison, result_a, result_b}` (before/after comparison + both full results) |
 
-Scenarios: `sensitive_data_exposure`, `credential_compromise`, `lateral_movement`,
-`privilege_escalation`, `outdated_service_exploitation`. The result schema is in docs/ENGINE.md §6.
+| Method | Path | Body / query |
+|---|---|---|
+| GET | `/scenarios` | labels, entry kind, techniques |
+| POST | `/simulations` | `{twin_id, scenario, revision?, params?}`; `params.foothold`, `params.foothold_privilege` for lateral/privesc |
+| GET | `/simulations/{id}` | full run incl. `result` (also `residual_findings`: present but not exploitable in this scenario) |
+| GET | `/simulations?twin=&scenario=&limit=` | history summaries |
+
+Example:
+
+```bash
+curl -s -XPOST localhost:8000/api/v1/simulations -H 'content-type: application/json' \
+  -d '{"twin_id":"northwind","scenario":"sensitive_data_exposure"}' | jq '.result.score'
+# 24.54
+```
 
 ## Remediation
+
+| Method | Path | Body / query |
+|---|---|---|
+| GET | `/recommendations?twin=&scenario=&revision=&foothold=` | what-if Δscore per candidate action, sorted |
+| POST | `/remediations/apply` | `{twin_id, scenario, params?, actions[], note?}` → `{remediation_id, revision, comparison}` |
+| GET | `/remediations?twin=` | applied fixes with stored comparisons |
+
+Action union (`type` discriminator): `restrict_port {asset_id, port, allow_from_zones[]}`,
+`enforce_mfa {principal_id}`, `set_password_policy {principal_id, policy}`, `apply_patch {vuln_id}`,
+`reduce_permission {principal_id, asset_id, level: none|read|write}`, `segment_zones {zone_a, zone_b}`.
+
+Comparison: `before_score, after_score, score_delta, blocked_paths[], reduced_paths[], new_paths[], per_asset_delta[], changes[]`.
+A path is *blocked* if its goal became unreachable or its exact step sequence (edges + techniques) no longer exists.
+
+## AI (Server-Sent Events over POST)
+
+| Method | Path | Body |
+|---|---|---|
+| GET | `/ai/status` | `{provider, model, mode: llm|fallback, config_error}` |
+| POST | `/ai/explain` | `{simulation_id, remediation_id?, lang: en|tr}` |
+| POST | `/ai/chat` | `{twin_id, simulation_id?, messages: [{role, content}], lang}` |
+
+Events (`event: <type>\ndata: <json>`): `meta {mode, provider, model, cached, reason?}`, `progress {chars}` (model is
+writing structured JSON), `delta {text}`, `reset {reason}` (LLM failed or returned invalid JSON; template follows),
+`done {mode, unverified[], missing_sections[], numeric_violations[], unplaced_numbers[], citation_violations[],
+unknown_placeholders[], order_violations[], technique_violations[], duplicate_fixes[]}`.
+
+The model returns schema-constrained JSON (Ollama `format`, OpenAI `response_format: json_schema`, Anthropic forced
+tool use) with `{{placeholder}}` keys instead of numbers; the server fills them in, renders the attack steps from the
+engine and runs the checks above. See docs/AI_EVAL.md.
+
+## Reports, events, demo
+
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/twins/{id}/remediations/apply` | `{actions: [...], scenario, params?}` → new revision + `comparison {before, after, score_delta, blocked_paths, reduced_paths, new_paths, per_asset_delta, residual_exposure}` |
-| GET | `/twins/{id}/remediations` | history |
-| GET | `/remediations/{rid}` | |
-| POST | `/remediations/{rid}/revert` | new revision with the pre-remediation content + re-run; only while it is the head |
-
-## AI analyst (Server-Sent Events)
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/ai/status` | `{configured, provider, model}`; provider comes from env only |
-| POST | `/ai/explain` | `{run_id, lang}` → SSE events: `meta`, `mode {mode: llm\|template, provider, model, cached, notice}`, `section {name, items, verified}` × 5 (`summary`, `key_risks`, `attack_steps`, `remediation_plan`, `residual`), `checks {flags}`, `done` |
-| POST | `/ai/chat` | `{twin_id, run_id?, message, history, lang}` → SSE: `meta`, `mode`, `token` × n, `answer {answer, cited_ids, flags, verified}`, `done` |
-
-`attack_steps` text is always rendered by the engine. In LLM mode the model writes placeholders
-(`{{score}}`, `{{path.P1.likelihood}}`, `{{rec.1.delta}}`, …) that the backend fills; post-check flags:
-`unknown_placeholder`, `literal_number`, `wrong_path_step`, `unknown_id`, `remediation_order`.
-Explanations are cached by `result_hash + lang + provider/model`.
-
-Provider env vars: `CYBERTWIN_AI_PROVIDER` (`none` default, `ollama`, `openai_compatible`, `anthropic`),
-`CYBERTWIN_AI_BASE_URL`, `CYBERTWIN_AI_MODEL`, `CYBERTWIN_AI_API_KEY`, `CYBERTWIN_AI_TIMEOUT_S`,
-`CYBERTWIN_AI_RETRIES`.
-
-## Reports and i18n
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/reports/runs/{run_id}?lang=en\|tr\|az` | structured report with localized, formatted text |
-| GET | `/reports/runs/{run_id}/html?lang=` | printable self-contained HTML in that language |
-| GET | `/i18n` | languages |
-| GET | `/i18n/{lang}` | the shared catalog (same file the frontend bundles) |
-
-Action shapes:
-```json
-{"action": "restrict_port", "asset_id": "web-01", "port": 22}
-{"action": "enforce_mfa", "principal_id": "svc-web"}
-{"action": "set_password_policy", "principal_id": "svc-web", "strength": "strong"}
-{"action": "set_password_policy", "asset_id": "web-01", "strength": "strong"}
-{"action": "apply_patch", "vulnerability_id": "v-openssh-web01"}
-{"action": "reduce_permission", "principal_id": "svc-web", "asset_id": "customer-db", "level": "user"}
-{"action": "segment_zones", "zones": ["internal", "data"]}
-```
+| GET | `/reports/{simulation_id}?format=json|html&lang=` | score, paths, findings, applied fixes, revision diff, analyst summary; HTML is printable (Print → PDF) |
+| GET | `/events?twin=` / POST `/events/read` | notification feed: simulation finished, remediation applied, revert, demo reset |
+| POST | `/demo/reset` | deletes and re-seeds the Northwind twin |
+| GET | `/health` | |

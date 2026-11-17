@@ -1,26 +1,36 @@
-﻿<#
-  Creates the Desktop shortcut "CyberTwin" with the app icon (assets\cybertwin.ico).
-  The shortcut runs scripts\CyberTwin.ps1 with a hidden console, so double-clicking it only shows
-  the app window. Run:  powershell -ExecutionPolicy Bypass -File scripts\install-shortcut.ps1
+<#
+.SYNOPSIS
+  Creates a Desktop shortcut "CyberTwin" (custom icon) that starts scripts\CyberTwin.ps1 without a console window.
+
+.PARAMETER Remove
+  Delete the shortcut instead.
 #>
-$ErrorActionPreference = 'Stop'
+[CmdletBinding()]
+param([switch]$Remove)
+
+$ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-$Icon = Join-Path $Root 'assets\cybertwin.ico'
-$Launcher = Join-Path $Root 'scripts\CyberTwin.ps1'
-if (-not (Test-Path $Icon)) { throw "Icon not found: $Icon" }
+$Launcher = Join-Path $PSScriptRoot "CyberTwin.ps1"
+$Icon = Join-Path $PSScriptRoot "assets\cybertwin.ico"
+$Desktop = [Environment]::GetFolderPath("Desktop")   # follows OneDrive desktop redirection
+$Link = Join-Path $Desktop "CyberTwin.lnk"
+
+if ($Remove) {
+  Remove-Item $Link -Force -ErrorAction SilentlyContinue
+  Write-Host "Removed $Link"
+  exit 0
+}
 if (-not (Test-Path $Launcher)) { throw "Launcher not found: $Launcher" }
+if (-not (Test-Path $Icon)) { throw "Icon not found: $Icon (generate it: cd e2e; node scripts/make-icon.ts)" }
 
-$desktop = [Environment]::GetFolderPath('Desktop')
-$lnkPath = Join-Path $desktop 'CyberTwin.lnk'
-$powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-
+$powershell = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
 $shell = New-Object -ComObject WScript.Shell
-$lnk = $shell.CreateShortcut($lnkPath)
-$lnk.TargetPath = $powershell
-$lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Launcher`""
-$lnk.WorkingDirectory = $Root
-$lnk.IconLocation = "$Icon,0"
-$lnk.Description = 'CyberTwin - digital twin security lab (simulation only)'
-$lnk.WindowStyle = 7   # minimized: the console is hidden by -WindowStyle Hidden anyway
-$lnk.Save()
-Write-Host "Shortcut created: $lnkPath"
+$sc = $shell.CreateShortcut($Link)
+$sc.TargetPath = $powershell
+$sc.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Launcher`""
+$sc.WorkingDirectory = $Root
+$sc.IconLocation = "$Icon,0"
+$sc.Description = "CyberTwin: cybersecurity digital twin (simulation only)"
+$sc.WindowStyle = 7  # minimized: no console flash before -WindowStyle Hidden applies
+$sc.Save()
+Write-Host "Created $Link"

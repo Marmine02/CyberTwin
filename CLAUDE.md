@@ -1,38 +1,30 @@
-# CyberTwin — rules for every session
+# CyberTwin: working rules (Updated: 2026-11-17)
 
-Full product spec: `docs/SPEC.md` (source of truth). Resume state: `PROGRESS.md` + `git log` + `git status`.
+## Checkpoint protocol (mandatory)
+- `PROGRESS.md` is the source of truth for state. Update it:
+  - after every finished item or sub-step,
+  - BEFORE starting any long step (full test suites, live LLM evals, Docker builds).
+- PROGRESS.md format:
+  ## Done        (one line each + how it was verified)
+  ## In progress (exact sub-step, files being touched)
+  ## Next        (ordered list)
+  ## How to verify (exact commands)
+  ## Suggested commit message for the current checkpoint
+- When an item is done: write the suggested commit message in PROGRESS.md and
+  tell me "CHECKPOINT N ready". Then keep working. Do NOT run git commit/push;
+  I commit myself. Never add AI signatures or Co-Authored-By lines.
 
-## Communication
-- Talk to the owner in Turkish (Azerbaijani if they ask), short and clear.
-- Before any install, admin (UAC) prompt or GitHub step: one sentence on what and why.
-- Ask only when truly blocked.
+## Resuming (new session or after a usage limit)
+1. Read PROGRESS.md, then `git status` and `git diff --stat`.
+2. Continue from "In progress". Don't redo finished work, don't re-run full
+   suites unless the step needs it.
 
-## Working rules
-- Update `PROGRESS.md` (Done / In progress / Next / How to verify) after every finished step and BEFORE any long run.
-- Token discipline: long test/build output goes to `logs/<name>.log`; read only summaries/failures.
-- Real path only: tests count only against the real backend, DB, browser, launcher. Mock-only = "not tested", report it so.
-- Unfinished items go to `docs/KNOWN_GAPS.md`, stated bluntly.
-- Check current package versions when installing (`npm view`, `uv`); never pin from memory.
-- No Docker, no Ollama on this PC. Do not install them.
+## Token discipline
+- Redirect long test/build output to logs/<name>.log and read only the summary
+  and failures (tail / grep). Never dump full suite output into context.
+- Live LLM evals and full E2E runs are expensive: run them only at the end of
+  an item, not after every small edit.
 
-## Git
-- Repo-local `user.name` / `user.email` only; never touch global git config.
-- Commit after every checkpoint, small logical commits: `feat:`, `fix:`, `test:`, `docs:`, `chore:`.
-- NO AI attribution anywhere: no `Co-Authored-By`, no "Generated with", no AI signature in commits or PRs.
-- Run relevant tests before each commit; never commit red. Never commit secrets.
-- Push at the end of every phase. Never force-push. Show `git log --oneline -5` after each push.
-
-## Hard product rules
-1. Never touch real infrastructure: no scanning/probing/exploit code. Pure graph computation on stored data.
-2. Attack paths come only from the deterministic engine. The LLM only explains; never invents paths, vulns, numbers, scores.
-3. No fake live monitoring ("Live", "Real-time", fake incidents/feeds). Persistent "simulation-only" badge. Seed CVEs labelled "illustrative".
-4. Determinism: same revision + scenario → byte-identical result (sorted IDs, no randomness). Tested.
-5. No hardcoded UI strings: EN/TR/AZ via i18n from day one.
-6. Neon design (spec §10) is the visual target; never tone down glow, gradient borders, particles, palette.
-
-## Windows notes
-- Push auth: repo-local credential helper `!gh auth git-credential` (owner logged in as Marmine02). Set `$env:GIT_TERMINAL_PROMPT='0'` before push so nothing hangs on a GUI prompt.
-- Smart App Control is enforced: backend tools run as `uv run python -m <tool>`, never the venv `.exe` shims. Run `scripts\check.ps1` for all checks.
-- Add `$env:USERPROFILE\.local\bin` to PATH for `uv` in each shell.
-- Shell is Windows PowerShell 5.1: no `&&`; run npm via `cmd /c` when stderr warnings matter.
-- Python 3.12 via `uv` only.
+## Rules carried over
+- Tests count only on the real path (real backend/DB/browser/LLM). Mock-only = "not tested".
+- Unfinished or unverified things go into docs/KNOWN_GAPS.md, stated bluntly.

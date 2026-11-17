@@ -1,0 +1,278 @@
+[
+  {
+    "id": "reset",
+    "toast": "Demo restored to its original state"
+  },
+  {
+    "id": "fresh-overview",
+    "shot": "01-fresh-overview.png",
+    "buttons": [
+      "All",
+      "DMZ",
+      "Internal",
+      "Data",
+      "Mgmt",
+      "Run Sensitive Data Exposure",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "textSample": "DIGITAL TWIN TOPOLOGY Internet 203.0.113.1 Edge Firewall 10.0.0.1 2 Public Web Server 10.0.1.10 Identity Server 10.0.2.10 Order App Server 10.0.2.20 2 Employee Workstation 10.0.2.50 Internal Firewall 10.0.3.1 1 Customer Database 10.0.3.10 Admin Workstation 10.0.4.10 React Flow All DMZ Internal Data Mgmt CRITICAL FINDINGS No simulations yet. Run your first scenario. Run Sensitive Data Exposure SECU"
+  },
+  {
+    "id": "fresh-map",
+    "shot": "02-fresh-map.png",
+    "buttons": [
+      "",
+      "",
+      "",
+      "All",
+      "DMZ",
+      "Internal",
+      "Data",
+      "Mgmt"
+    ],
+    "textSample": "DIGITAL TWIN NETWORK MAP Show latest simulation DATA DMZ INTERNAL INTERNET MGMT Internet 203.0.113.1 Edge Firewall 10.0.0.1 2 Public Web Server 10.0.1.10 Identity Server 10.0.2.10 Order App Server 10.0.2.20 2 Employee Workstation 10.0.2.50 Internal Firewall 10.0.3.1 1 Customer Database 10.0.3.10 Admin Workstation 10.0.4.10 React Flow Secure Has findings Compromised Network link Trust Attack path D"
+  },
+  {
+    "id": "fresh-assets",
+    "shot": "03-fresh-assets.png",
+    "buttons": [
+      "Assets9",
+      "Connections15",
+      "Identities5",
+      "Firewall rules11",
+      "New asset",
+      "Name",
+      "Type",
+      "Zone",
+      "Criticality",
+      "Risk",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "textSample": "ASSET MANAGEMENT Assets9 Connections15 Identities5 Firewall rules11 All types Internet gateway Firewall Web server App server Database server Identity server Employee workstation Admin workstation New asset Name Type Zone IP address Open ports Criticality Risk Actions Admin Workstation ws-admin-01 Admin workstation Mgmt 10.0.4.10 3389 4/5 — Customer Database customer-db Database server Data 10.0.3"
+  },
+  {
+    "id": "fresh-simulate",
+    "shot": "04-fresh-simulate.png",
+    "buttons": [
+      "Sensitive Data ExposureFrom th",
+      "Credential CompromiseFrom the ",
+      "Lateral MovementFrom one compr",
+      "Privilege EscalationFrom a foo",
+      "Outdated ServicesFrom the inte",
+      "Run simulation",
+      "Analyze with AI [disabled]",
+      "Open remediation [disabled]"
+    ],
+    "textSample": "Sensitive Data Exposure From the internet to data on assets with sensitivity 2 or higher. Credential Compromise From the internet to usable credentials of any identity. Lateral Movement From one compromised host, how far can an attacker spread? Privilege Escalation From a foothold to domain admin or the identity server. Outdated Services From the internet, using only end-of-life software. % COMPRO"
+  },
+  {
+    "id": "fresh-vulns",
+    "shot": "05-fresh-vulns.png",
+    "buttons": [
+      "Add finding",
+      "Outdated OpenSSH 7.2p2: pre-au",
+      "svc-web: weak password, no MFA",
+      "Print spooler local privilege ",
+      "adm-app admin credentials cach",
+      "svc-web holds admin rights on ",
+      "SSH (22/tcp) on web-01 reachab",
+      "Fix",
+      "Edit",
+      "Delete finding"
+    ],
+    "textSample": "VULNERABILITY ANALYSIS Add finding Path counts and Δscore come from a simulation on the current revision. Run one to fill them in. Finding CVSS Affects Paths using it Δscore if fixed Outdated OpenSSH 7.2p2: pre-auth remote code execution vuln-ssh-rce 9.8 CRITICAL web-01:22 — — svc-web: weak password, no MFA, Kerberoastable vuln-svcweb-weakpw 8.8 HIGH — / svc-web — — Print spooler local privilege e"
+  },
+  {
+    "id": "fresh-assistant",
+    "shot": "06-fresh-assistant.png",
+    "buttons": [
+      "Regenerate [disabled]",
+      "What should I fix first?",
+      "How does the attacker reach th",
+      "What is the security score and",
+      "Send [disabled]"
+    ],
+    "textSample": "SECURITY ANALYST EXPLANATION Regenerate Simulation No simulation to explain Run a scenario first; the analyst only explains engine results. Explanations describe simulated results on a virtual model. Paths and numbers come only from the engine. ASK THE ANALYST Ask about the current model and latest simulation. Answers use only that data. What should I fix first? How does the attacker reach the cus"
+  },
+  {
+    "id": "fresh-remediation",
+    "shot": "07-fresh-remediation.png",
+    "buttons": [
+      "Select top 3",
+      "Apply 0 fixes [disabled]"
+    ],
+    "textSample": "RECOMMENDED FIXES Sensitive Data Exposure Credential Compromise Lateral Movement Privilege Escalation Outdated Services Current score 25 on r1. Each fix shows the score change the engine computed for it alone. #1 Restrict web-01 port 22 to Mgmt Addresses vuln-ssh-exposed, vuln-ssh-rce +75.5 CRITICAL #2 Patch vuln-ssh-rce Addresses vuln-ssh-rce +59.6 CRITICAL #3 Enforce MFA for svc-web Addresses vu"
+  },
+  {
+    "id": "fresh-reports",
+    "shot": "08-fresh-reports.png",
+    "buttons": [],
+    "textSample": "SIMULATION HISTORY No simulations yet. Run your first scenario. Go to Attack Simulation REVISION DIFF From r1 · seed · Seed: Northwind Logistics demo To r1 · seed · Seed: Northwind Logistics demo r1 · 16 Nov 2026, 14:41 · Seed: Northwind Logistics demo These revisions are identical. Open a run's Report and use Print to save it as PDF."
+  },
+  {
+    "id": "sim-run",
+    "msUntilToast": 135,
+    "toast": "Simulation finishedSensitive Data Exposure: score 25, 10 paths.Inspect results",
+    "replayPosAfterRun": "32/32",
+    "sameUrl": "http://127.0.0.1:63543/simulate"
+  },
+  {
+    "id": "sim-inspect",
+    "shots": [
+      "09-sim-after-run-click.png",
+      "10-sim-inspect-results.png"
+    ],
+    "replayPos": "32/32",
+    "score": "25",
+    "url": "http://127.0.0.1:63543/simulate?run=0889cdb9-a8a4-435a-85cb-452ff82f55cc"
+  },
+  {
+    "id": "sim-inspect-full",
+    "shot": "11-sim-inspect-full.png"
+  },
+  {
+    "id": "replay-play",
+    "posEarly": "0/32",
+    "msToFinish": 29011,
+    "posEnd": "32/32"
+  },
+  {
+    "id": "eventlog",
+    "items": [
+      {
+        "text": "internet can reach web-01 tcp/22 (ssh OpenSSH_7.2p2) via fw-edge",
+        "truncated": true
+      },
+      {
+        "text": "internet can reach web-01 tcp/443 (https nginx-1.18.0) via fw-edge",
+        "truncated": true
+      },
+      {
+        "text": "Exploit Outdated OpenSSH 7.2p2: pre-auth remote code execution on web-01:22 to get admin access",
+        "truncated": true
+      },
+      {
+        "text": "Admin on web-01 reads its data (sensitivity 1)",
+        "truncated": false
+      },
+      {
+        "text": "web-01 can reach app-01 tcp/8080 (http tomcat-9.0.80) via fw-edge",
+        "truncated": true
+      },
+      {
+        "text": "web-01 can reach idp-01 tcp/636 (ldaps) via fw-edge",
+        "truncated": false
+      }
+    ]
+  },
+  {
+    "id": "map-clip",
+    "clippedNodes": [],
+    "attributionVisible": 1
+  },
+  {
+    "id": "map-page",
+    "shot": "14-map-node-selected.png"
+  },
+  {
+    "id": "map-zone",
+    "shot": "15-map-zone-filter.png"
+  },
+  {
+    "id": "overview-after-run",
+    "shot": "16-overview-after-run.png"
+  },
+  {
+    "id": "assistant",
+    "shot": "17-assistant-after-run.png"
+  },
+  {
+    "id": "remed-before",
+    "shot": "18-remediation-before-apply.png"
+  },
+  {
+    "id": "remed-apply",
+    "ms": 254,
+    "toast": "Fixes applied as r2Score 25 → 100; 10 paths blocked.",
+    "shot": "19-remediation-after-apply.png"
+  },
+  {
+    "id": "r2-sim",
+    "shot": "20-r2-sim-outdated-tr.png",
+    "score": "100",
+    "pos": "1/1",
+    "rev": "Eski Servisler · r2"
+  },
+  {
+    "id": "r2-overview",
+    "shot": "21-r2-overview.png"
+  },
+  {
+    "id": "r2-map",
+    "shot": "22-r2-map.png"
+  },
+  {
+    "id": "r2-assets",
+    "shot": "23-r2-assets.png"
+  },
+  {
+    "id": "r2-simulate",
+    "shot": "24-r2-simulate.png"
+  },
+  {
+    "id": "r2-vulns",
+    "shot": "25-r2-vulns.png"
+  },
+  {
+    "id": "r2-assistant",
+    "shot": "26-r2-assistant.png"
+  },
+  {
+    "id": "r2-remediation",
+    "shot": "27-r2-remediation.png"
+  },
+  {
+    "id": "r2-reports",
+    "shot": "28-r2-reports.png"
+  },
+  {
+    "id": "keyboard",
+    "tabOrder": [
+      "A:Skip to content",
+      "A:CYBERTWINDigital Twin Se",
+      "SELECT:r2 · latestr1 · seed",
+      "BUTTON:Reset demo",
+      "BUTTON:Notifications, 4 unread",
+      "BUTTON:en",
+      "BUTTON:tr",
+      "A:Overview",
+      "A:Network Map",
+      "A:Assets",
+      "A:Attack Simulation",
+      "A:Vulnerabilities",
+      "A:AI Assistant",
+      "A:Remediation"
+    ]
+  }
+]

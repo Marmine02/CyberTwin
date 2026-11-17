@@ -1,86 +1,86 @@
 # Architecture
 
-CyberTwin is one Python process (FastAPI + the engine) that also serves the built React app, opened
-as a Chromium `--app` window by a PowerShell launcher. Everything is computed from the stored virtual
-model; nothing touches real infrastructure.
-
 ```mermaid
 flowchart LR
-    subgraph Desktop["Windows desktop"]
-        LNK["Desktop shortcut<br/>CyberTwin.lnk"] --> PS["scripts/CyberTwin.ps1<br/>(build if stale, free port,<br/>health wait, clean shutdown)"]
-        PS --> EDGE["Edge / Chrome --app window<br/>profile: %LOCALAPPDATA%\\CyberTwin"]
-    end
+  subgraph Browser
+    UI["React 19 + Vite<br/>React Flow 12 · TanStack Query · Zustand · i18next"]
+  end
+  subgraph Backend["FastAPI /api/v1"]
+    API["Routes (api/)<br/>error envelope · CORS · OpenAPI"]
+    SVC["Services (services/)<br/>revisions · simulate · apply · revert"]
+    ENG["Engine (engine/)<br/>NetworkX attack graph · scoring · hash"]
+    REM["Remediation (remediation/)<br/>typed actions · what-if · compare"]
+    AI["AI (ai/)<br/>providers · fallback · post-check · cache"]
+    REPO["Repositories (repositories/)<br/>SQLAlchemy 2 async"]
+  end
+  DB[("SQLite (default)<br/>PostgreSQL via DATABASE_URL")]
+  LLM["Ollama / OpenAI-compatible / Anthropic<br/>(optional, server-side keys)"]
 
-    subgraph Backend["Backend process: python -m cybertwin (FastAPI, one port)"]
-        API["api/ routes /api/v1<br/>error envelope, CORS lock"]
-        SPA["SPA static files<br/>(FRONTEND_DIST)"]
-        SVC["services/core.py<br/>edits, runs, apply, revert, demo reset"]
-        ENG["engine/<br/>network · findings · graph · scenarios · simulate"]
-        REM["remediation/<br/>typed actions · compare"]
-        AI["ai/<br/>context · checks · narrative · providers · service"]
-        REP["reports/render.py<br/>JSON + printable HTML"]
-        I18N["i18n/catalog.py"]
-        REPO["db/repository.py<br/>SQLAlchemy 2.0 async"]
-    end
-
-    EDGE -- "HTTP + SSE" --> API
-    EDGE -- "GET /" --> SPA
-    API --> SVC --> ENG
-    SVC --> REM --> ENG
-    API --> AI --> ENG
-    API --> REP
-    AI --> I18N
-    REP --> I18N
-    SVC --> REPO
-    API --> REPO
-    REPO --> DB[("SQLite<br/>Alembic migrations")]
-    AI -. "optional, env only" .-> LLM["LLM provider<br/>ollama · openai_compatible · anthropic"]
-    SHARED["shared/i18n/*.json<br/>EN · TR · AZ"] --> I18N
-    SHARED --> FE["frontend (Vite build)<br/>React 19 · React Flow · TanStack Query · Zustand"]
-    FE --> SPA
+  UI -- "JSON + SSE (fetch)" --> API
+  API --> SVC
+  SVC --> ENG
+  SVC --> REM
+  REM --> ENG
+  API --> AI
+  AI -. "SimulationResult JSON only" .-> LLM
+  SVC --> REPO --> DB
+  AI --> REPO
 ```
 
-## Backend (`backend/src/cybertwin`)
-| Module | Role |
+## Backend (`backend/app`)
+
+| Package | Responsibility |
 |---|---|
-| `domain/model.py` | Pydantic v2 model of one revision (`TwinContent`): assets, connections, principals, firewall rules, vulnerabilities, policy. Immutable, validated (referential integrity), canonical JSON + SHA-256 content hash. |
-| `domain/diff.py` | Structural diff between two revisions. |
-| `db/` | SQLAlchemy 2.0 async tables, Alembic migration `0001_initial`, repository (the only DB access; portable SQL). Revisions are append-only; node positions are stored separately so dragging never creates revisions. |
-| `engine/` | Deterministic attack-graph simulation (NetworkX): reachability through ordered firewall rules, edge generators, scenarios, scoring, Top-K paths, chokepoints, greedy recommendations, residual exposure, replay timeline, `result_hash`. See [ENGINE.md](ENGINE.md). |
-| `remediation/` | Typed actions (`restrict_port`, `enforce_mfa`, `set_password_policy`, `apply_patch`, `reduce_permission`, `segment_zones`) as pure functions on a snapshot; before/after comparison (blocked / reduced / new paths, per-asset deltas). |
-| `services/` | Use cases: demo reset, CRUD edits as new revisions (with cascade + dependents), run, apply, revert, restore. |
-| `ai/` | Grounding (placeholder values, known ids), post-checks, engine-rendered narrative and deterministic EN/TR/AZ template explanation, provider adapters, explanation cache, grounded chat. |
-| `api/` | FastAPI app factory, routers, one error envelope, SPA serving, SSE endpoints. See [API.md](API.md). |
-| `i18n/catalog.py` | Reads the shared catalogs; i18next-compatible interpolation and plurals; number/percent/date formatting per language. |
+| `schemas/` | Pydantic v2 models: `TwinSnapshot` (assets, connections, principals, firewall rules, vulnerabilities, segmented zones) with referential-integrity validation; `SimulationResult`; remediation action union; API bodies. |
+| `models/` | SQLAlchemy 2.0 tables: `twins`, `twin_revisions` (immutable snapshot JSON + parent + note + diff), `layout_positions`, `simulation_runs` (result JSON + hash), `remediation_records`, `ai_cache`, `events`. Portable column types only. |
+| `db/` | Async engine/session; runs Alembic `upgrade head` on startup (single schema source of truth). |
+| `repositories/` | The only code that issues SQL (ORM queries; no dialect-specific SQL). |
+| `engine/` | Deterministic attack-graph simulation (see ENGINE.md). Pure functions. |
+| `remediation/` | `actions.py` applies typed actions to a snapshot copy; `candidates.py` derives fixes from findings; `recommend.py` builds what-if recommendations and before/after comparisons. |
+| `ai/` | Provider adapters returning schema-constrained JSON, placeholder filling (`structured.py`), integrity post-checks (numbers ±0.5 %, citations, order, duplicates, unknown placeholders, unverified ids), deterministic EN/TR template fallback, cache keyed by `result_hash`. |
+| `i18n/` | Engine message catalog (EN + TR), server-side `render()` / `localize()` for reports, the LLM payload and the template fallback. |
+| `services/` | Orchestration: revision mutation with validation + diff, simulation runs + events, apply/revert, demo reset. |
+| `api/` | FastAPI routers. |
+| `seed/` | Northwind Logistics demo twin. |
+
+### Revisions
+
+Every edit (asset/connection/principal/rule/vuln CRUD), remediation and revert creates a new numbered
+revision; nothing is updated in place. Revert of revision R creates R+n whose snapshot equals R's parent.
+Node positions are stored separately (`layout_positions`) so dragging does not create revisions; positions
+never enter the engine or the result hash. Mutations accept `?expected_revision=` for optimistic concurrency.
+
+### Translatable output
+
+The engine emits `{code, params}` messages; the frontend loads the catalog from `GET /api/v1/i18n/engine` into an
+i18next `engine` namespace and renders them (`useMsg()`), so step reasons, change logs and notifications follow the
+UI language. The server uses the same catalog for printable reports and the template fallback.
+
+### AI boundary
+
+The model receives only `explain_payload(SimulationResult[, Comparison])` (rendered in English) plus a fixed system
+prompt and a list of placeholder keys. It must answer with schema-constrained JSON in which every quantity is a
+placeholder; the server fills the values from the engine result and renders the step-by-step attack narrative from
+the engine itself. Post-checks report stray numbers, wrong-path citations, unknown placeholders, order violations,
+duplicates and unverified ids; the UI shows them as "Integrity checks". Provider errors, timeouts and invalid JSON
+retry with exponential backoff, then fall back to the template. Evidence: docs/AI_EVAL.md.
 
 ## Frontend (`frontend/src`)
-| Area | Role |
+
+| Folder | Content |
 |---|---|
-| `api/` | `fetch` wrapper (error envelope → `ApiError` with i18n code), POST-SSE reader, TanStack Query hooks, CRUD mutations. |
-| `store/` | Zustand: language, twin, viewed revision, scenario, foothold; guided-demo state; toasts. |
-| `i18n/` | i18next with the shared catalogs bundled at build time; formatters; engine message renderer (same variant rules as the backend). |
-| `components/map/` | React Flow topology: neon pedestal nodes, particle edges, attack-path highlighting, logical hops, readability-aware camera (min zoom keeps labels ≥ 11 px; compact mode for mini maps). |
-| `components/` | Shell (top bar, icon rail, menus), glass panels, dialogs, toasts, forms with validation, asset drawer, guided tour. |
-| `pages/` | Overview, Network map, Assets, Attack simulation (replay), Vulnerabilities, AI assistant, Remediation, Reports. |
-| `lib/` | Replay frames, model helpers, notes/events text, error text, tour steps. |
+| `design/` | Tailwind v4 `@theme` tokens (colors, fonts), glass panel component classes, motion + reduced-motion rules, React Flow theme. |
+| `api/` | Typed client mirroring backend schemas, error envelope → `ApiError`, timeouts, POST-SSE reader; TanStack Query hooks. |
+| `stores/` | Zustand: UI state (twin, viewed revision, selection, zone/type filters, last simulation) and the pure replay reducer. |
+| `features/map/` | `buildFlow` (pure) → React Flow nodes/edges; neon pedestal nodes; particle edges (SVG `animateMotion`); zone and blast-radius layers. |
+| `features/*` | Assistant streaming store (`useSyncExternalStore`), markdown renderer with unverified flags, replay helpers, remediation labels. |
+| `pages/` | The 8 pages. |
+| `i18n/` | EN + TR resources; `tr` is typed as `typeof en`, and i18next keys are type-checked. |
 
-## Data flow of the demo
-1. **Run**: `POST /twins/{id}/simulations` → `services.core.run_simulation` → `engine.simulate`
-   (pure, deterministic) → stored in `simulation_runs` with `result_hash` → UI replays
-   `timeline.primary` frame by frame.
-2. **Fix**: `POST /twins/{id}/remediations/apply` → actions applied to a copy of the head snapshot →
-   new revision (`kind=remediation`) → scenario re-run on before and after → comparison stored.
-3. **Revert**: `POST /remediations/{rid}/revert` → new revision with the pre-fix content → re-run →
-   the `result_hash` equals the original run's hash (same content, same result).
+## Testing layers
 
-## Determinism
-Sorted ids everywhere, insertion-ordered graphs, no randomness, floats rounded to 6 decimals,
-canonical JSON for hashing. Tests assert byte-identical results, also with shuffled input order.
-
-## Testing
-- Backend: pytest on a real temporary SQLite with real migrations (engine, remediation, API, AI,
-  i18n), ruff, mypy --strict.
-- Frontend: tsc, eslint, vitest (catalog key/placeholder parity).
-- E2E: Playwright against the real backend + `vite build && vite preview`, Microsoft Edge.
-- Desktop: the real launcher, opened from the Desktop shortcut, driven over CDP
-  (`frontend/scripts/verify-desktop.mjs`).
+* `backend/tests/engine`, `remediation`: pure engine/remediation unit + scenario tests.
+* `backend/tests/api`: FastAPI app with a real temp SQLite DB, real migrations, real seed (TestClient).
+  `test_ai.py::test_live_ollama_explain_and_cache` hits a real local Ollama when reachable.
+* `frontend/src/__tests__`: scoring display, replay reducer, SSE parsing, map builder.
+* `e2e/`: Playwright against real uvicorn + real Vite (fresh SQLite DB per run).

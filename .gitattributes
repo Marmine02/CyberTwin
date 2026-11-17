@@ -1,20 +1,6 @@
+# Line endings & binary files configuration (Updated: 2026-11-17)
 * text=auto eol=lf
-
-# Windows scripts keep CRLF so cmd.exe / PowerShell 5.1 read them reliably
-*.bat text eol=crlf
-*.cmd text eol=crlf
-*.ps1 text eol=crlf
-
-# binaries
 *.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-*.webp binary
 *.ico binary
 *.woff binary
 *.woff2 binary
-*.ttf binary
-*.otf binary
-*.pdf binary
-*.zip binary

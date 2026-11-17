@@ -1,175 +1,182 @@
-import { Eye, Lock, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useCrud, useSavePositions } from '../api/crud'
-import { useCurrentTwin, useLatestRun, useModel, useViewedRevision } from '../api/hooks'
-import { ASSET_TYPES, ZONES, type AssetType, type Connection, type Zone } from '../api/types'
-import { AssetDrawer } from '../components/AssetDrawer'
-import { TopologyMap } from '../components/map/TopologyMap'
-import { ConfirmDialog, Dialog } from '../components/ui/Dialog'
-import { GlassPanel } from '../components/ui/GlassPanel'
-import { ErrorState, Loading } from '../components/ui/States'
-import { useApp } from '../store/app'
+import { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { api } from "../api/client";
+import { useCurrentSimulation, useInvalidateTwin, useTwin } from "../api/hooks";
+import type { Connection } from "../api/types";
+import { Button, Dialog, ErrorState, Field, IconButton, Panel, Skeleton } from "../components/ui";
+import { X } from "lucide-react";
+import { inputCls } from "../components/cls";
+import { AssetDetails } from "../features/assets/AssetDetails";
+import { EditConnectionDialog } from "../features/assets/ConnectionDialogs";
+import { TwinMap } from "../features/map/TwinMap";
+import { ZoneSwitcher } from "../features/map/ZoneSwitcher";
+import { errorMessage } from "../lib/format";
+import { STATE_COLOR } from "../lib/score";
+import { useToasts, useUi } from "../stores/ui";
 
-type Kind = 'network' | 'trust'
+export function NetworkMapPage() {
+  const { t } = useTranslation();
+  const twin = useTwin();
+  const { sim } = useCurrentSimulation();
+  const { selectedAssetId, select, viewRevision, twinId } = useUi();
+  const [overlay, setOverlay] = useState(true);
+  const [pending, setPending] = useState<{ source: string; target: string } | null>(null);
+  const [editingConn, setEditingConn] = useState<Connection | null>(null);
+  const push = useToasts((s) => s.push);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queued = useRef<Record<string, { x: number; y: number }>>({});
 
-function connectionId(kind: Kind, a: string, b: string, existing: Set<string>): string {
-  const base = `${kind === 'network' ? 'n' : 't'}-${a}--${b}`.slice(0, 60)
-  let id = base
-  for (let i = 2; existing.has(id); i++) id = `${base}-${i}`
-  return id
-}
+  const snapshot = twin.data?.snapshot;
+  const selected = useMemo(() => snapshot?.assets.find((a) => a.id === selectedAssetId) ?? null, [snapshot, selectedAssetId]);
+  const editable = viewRevision === null;
+  const simMatches = sim.data && twin.data && sim.data.revision === twin.data.revision.number;
+  const result = overlay && simMatches ? sim.data!.result : null;
 
-export function NetworkMap() {
-  const { t } = useTranslation()
-  const twin = useCurrentTwin()
-  const viewed = useViewedRevision()
-  const setRevision = useApp((s) => s.setRevision)
-  const model = useModel()
-  const latest = useLatestRun(null)
-  const crud = useCrud('connections')
-  const savePositions = useSavePositions()
-  const [zone, setZone] = useState<Zone | null>(null)
-  const [types, setTypes] = useState<AssetType[]>([])
-  const [showPath, setShowPath] = useState(true)
-  const [showDerived, setShowDerived] = useState(false)
-  const [selected, setSelected] = useState<string | null>(null)
-  const [draft, setDraft] = useState<{ source: string; target: string; kind: Kind; label: string } | null>(null)
-  const [editing, setEditing] = useState<Connection | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<Connection | null>(null)
-  const isHead = !!twin && viewed === twin.head_revision
-  const result = latest.data?.result ?? null
-  const asset = model.data?.assets.find((a) => a.id === selected)
-  const ids = useMemo(() => new Set(model.data?.connections.map((c) => c.id) ?? []), [model.data])
-  const nameOf = (id: string) => model.data?.assets.find((a) => a.id === id)?.name ?? id
-
-  const toggleType = (ty: AssetType) => setTypes((cur) => (cur.includes(ty) ? cur.filter((x) => x !== ty) : [...cur, ty]))
+  const saveLayout = (pos: Record<string, { x: number; y: number }>) => {
+    queued.current = { ...queued.current, ...pos };
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      const payload = queued.current;
+      queued.current = {};
+      api.saveLayout(twinId, payload).catch((e) => push({ tone: "error", title: t("map.layoutFailed"), body: errorMessage(e) }));
+    }, 400);
+  };
 
   return (
-    <div className="flex h-full min-h-[600px] flex-col gap-3" data-testid="page-map">
-      <GlassPanel title={t('ui.nav.map')} index={0} className="min-h-0 flex-1" bodyClassName="flex flex-col gap-2"
-        actions={!isHead && (
-          <span className="chip border-warning/40 bg-warning/10 text-orange-200" data-testid="readonly-chip">
-            <Lock size={13} /> {t('ui.map.readOnly', { n: viewed ?? '' })}
-            <button type="button" className="underline" onClick={() => setRevision(null)}>{t('ui.map.goLatest')}</button>
-          </span>
-        )}>
-        <div className="flex flex-wrap items-center gap-2 text-[13px]">
-          <label className="flex items-center gap-2">
-            <span className="text-ink-300">{t('ui.asset.zone')}</span>
-            <select className="field w-auto py-1" value={zone ?? ''} onChange={(e) => setZone((e.target.value || null) as Zone | null)} data-testid="map-zone">
-              <option value="">{t('ui.overview.zoneAll')}</option>
-              {ZONES.map((z) => <option key={z} value={z}>{t(`zone.${z}`)}</option>)}
-            </select>
-          </label>
-          <div className="flex flex-wrap gap-1" role="group" aria-label={t('ui.map.typeFilter')}>
-            {ASSET_TYPES.map((ty) => (
-              <button key={ty} type="button" aria-pressed={types.includes(ty)} onClick={() => toggleType(ty)}
-                className={`chip ${types.includes(ty) ? 'border-cyan bg-cyan/20 text-cyan' : 'text-ink-300'}`}>{t(`assetType.${ty}`)}</button>
+    <div className="flex h-full flex-col gap-3 pt-4">
+      <Panel title={t("map.title")} className="min-h-[600px] flex-1" bodyClass="relative flex flex-col gap-2 p-2"
+        actions={
+          <>
+            <label className="flex items-center gap-2 text-[12.5px] text-ink-dim">
+              <input type="checkbox" checked={overlay} onChange={(e) => setOverlay(e.target.checked)} className="accent-[#22d3ee]" />
+              {t("map.overlay")}
+            </label>
+            {!editable && <span className="text-[12px] text-warning">{t("map.readOnly")}</span>}
+          </>
+        }>
+        {twin.isError ? <ErrorState error={twin.error} onRetry={() => void twin.refetch()} /> : (
+          <div className="flex min-h-[520px] flex-1 gap-2">
+          <div className="relative min-w-0 flex-1">
+            {snapshot ? (
+              <TwinMap snapshot={snapshot} result={result} path={result?.primary_path} editable={editable} showZones halo={!!result}
+                onSelect={select} onConnectRequest={(source, target) => setPending({ source, target })}
+                onLayoutChange={saveLayout} testId="network-map"
+                onEdgeSelect={editable ? (id) => setEditingConn(snapshot.connections.find((c) => c.id === id) ?? null) : undefined} />
+            ) : <Skeleton className="h-full w-full" />}
+            <Legend />
+          </div>
+          {/* details beside the map, not over it: the map re-fits to the remaining width */}
+          {selected && snapshot && (
+            <aside className="flex w-[340px] shrink-0 flex-col rounded-lg border border-line bg-bg-0/60" aria-label={selected.name}>
+              <header className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
+                <h2 className="panel-title truncate">{selected.name}</h2>
+                <IconButton label={t("common.close")} onClick={() => select(null)}><X size={16} /></IconButton>
+              </header>
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                <AssetDetails asset={selected} snapshot={snapshot} />
+              </div>
+            </aside>
+          )}
+          </div>
+        )}
+        <div className="flex items-center justify-between px-2">
+          <p className="text-[12px] text-ink-faint">{editable ? t("map.hint") : t("map.hintReadOnly")}</p>
+          <ZoneSwitcher />
+          <span className="w-[200px]" />
+        </div>
+      </Panel>
+      {editingConn && snapshot && <EditConnectionDialog connection={editingConn} snapshot={snapshot} onClose={() => setEditingConn(null)} />}
+      {pending && snapshot && (
+        <ConnectDialog source={pending.source} target={pending.target} existing={snapshot.connections}
+          ports={[...new Set([...(snapshot.assets.find((a) => a.id === pending.source)?.open_ports ?? []), ...(snapshot.assets.find((a) => a.id === pending.target)?.open_ports ?? [])].map((p) => p.port))].sort((a, b) => a - b)}
+          onClose={() => setPending(null)} />
+      )}
+    </div>
+  );
+}
+
+function Legend() {
+  const { t } = useTranslation();
+  const items = [
+    { c: STATE_COLOR.secure, k: "state.secure" },
+    { c: STATE_COLOR.warning, k: "state.warning" },
+    { c: STATE_COLOR.compromised, k: "state.compromised" },
+  ] as const;
+  return (
+    <div className="pointer-events-none absolute top-2 left-2 flex flex-col gap-1 rounded-lg border border-line bg-bg-0/70 px-2.5 py-2 text-[11.5px] backdrop-blur">
+      {items.map((i) => (
+        <span key={i.k} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: i.c }} />{t(i.k)}</span>
+      ))}
+      <span className="flex items-center gap-2"><span className="h-0.5 w-4 bg-[#22d3ee]" />{t("connKind.network")}</span>
+      <span className="flex items-center gap-2"><span className="h-0 w-4 border-t border-dashed border-violet" />{t("connKind.trust")}</span>
+      <span className="flex items-center gap-2"><span className="h-0.5 w-4 bg-critical" />{t("map.attackPath")}</span>
+    </div>
+  );
+}
+
+function ConnectDialog({ source, target, ports, existing, onClose }: {
+  source: string;
+  target: string;
+  ports: number[];
+  existing: Connection[];
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const twinId = useUi((s) => s.twinId);
+  const invalidate = useInvalidateTwin();
+  const push = useToasts((s) => s.push);
+  const [kind, setKind] = useState<Connection["kind"]>("network");
+  const [chosen, setChosen] = useState<number[]>([]);
+  const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const baseId = `c-${source}-${target}`.slice(0, 60);
+  let id = baseId;
+  for (let i = 2; existing.some((c) => c.id === id); i++) id = `${baseId}-${i}`;
+  const dup = existing.find((c) => c.kind === kind && ((c.source === source && c.target === target) || (kind === "network" && c.source === target && c.target === source)));
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const out = await api.createConnection(twinId, { id, source, target, kind, ports: chosen, description, principal_id: null });
+      await invalidate();
+      push({ tone: "success", title: t("map.connected", { source, target }), body: t("common.newRevision", { n: out.revision.number }) });
+      onClose();
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog open onClose={onClose} title={t("map.connectTitle")}
+      footer={<><Button onClick={onClose}>{t("common.cancel")}</Button><Button tone="primary" busy={busy} disabled={!!dup} onClick={submit} data-testid="connect-confirm">{t("map.createConnection")}</Button></>}>
+      <div className="flex flex-col gap-3">
+        <p className="text-[13px] text-ink-dim">{t("map.connectBody", { source, target })}</p>
+        <Field label={t("map.kind")} htmlFor="ckind">
+          <select id="ckind" className={inputCls} value={kind} onChange={(e) => setKind(e.target.value as Connection["kind"])}>
+            {(["network", "trust", "permission"] as const).map((k) => <option key={k} value={k}>{t(`connKind.${k}`)}</option>)}
+          </select>
+        </Field>
+        <Field label={t("map.ports")} hint={t("map.portsHint")}>
+          <div className="flex flex-wrap gap-2">
+            {ports.length === 0 && <span className="text-[13px] text-ink-dim">{t("map.noPorts")}</span>}
+            {ports.map((p) => (
+              <label key={p} className="flex items-center gap-1.5 rounded-md border border-line px-2 py-1 text-[12.5px]">
+                <input type="checkbox" className="accent-[#22d3ee]" checked={chosen.includes(p)}
+                  onChange={(e) => setChosen((c) => (e.target.checked ? [...c, p] : c.filter((x) => x !== p)))} />
+                <span className="mono">{p}</span>
+              </label>
             ))}
           </div>
-          <label className="ml-auto flex items-center gap-1.5 text-ink-200">
-            <input type="checkbox" checked={showPath} onChange={(e) => setShowPath(e.target.checked)} /> {t('ui.map.showPath')}
-          </label>
-          <label className="flex items-center gap-1.5 text-ink-200">
-            <input type="checkbox" checked={showDerived} onChange={(e) => setShowDerived(e.target.checked)} data-testid="toggle-derived" /> {t('ui.map.showPermissions')}
-          </label>
-        </div>
-        <div className="relative min-h-[460px] flex-1 overflow-hidden rounded-xl border border-cyan/10">
-          {model.isLoading && <Loading rows={6} />}
-          {model.isError && <ErrorState error={model.error} onRetry={() => void model.refetch()} />}
-          {model.data && (
-            <TopologyMap model={model.data} result={showPath ? result : null} pathId={showPath ? result?.primary_path : null}
-              zone={zone} types={types} showMinimap showControls showDerived={showDerived} editable={isHead}
-              onNodeClick={setSelected}
-              onNodeMoved={(id, x, y) => savePositions.mutate({ [id]: { x, y } })}
-              onConnect={(source, target) => setDraft({ source, target, kind: 'network', label: '' })}
-              onEdgeClick={(id) => {
-                const c = model.data?.connections.find((x) => x.id === id)
-                if (c && isHead) setEditing(c)
-              }}
-              ariaLabel={t('ui.nav.map')} />
-          )}
-          {asset && model.data && (
-            <AssetDrawer asset={asset} model={model.data} result={result} onClose={() => setSelected(null)} editable={isHead} />
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[12px] text-ink-300">
-          <span className="font-semibold text-ink-200">{t('ui.map.legend')}:</span>
-          <span className="flex items-center gap-1.5"><i className="inline-block h-0.5 w-6 bg-gradient-to-r from-cyan to-violet" />{t('ui.map.flow')}</span>
-          <span className="flex items-center gap-1.5"><i className="inline-block w-6 border-t-2 border-dashed border-violet" />{t('ui.map.trust')}</span>
-          <span className="flex items-center gap-1.5"><i className="inline-block w-6 border-t-2 border-dotted border-magenta" />{t('ui.map.permission')}</span>
-          <span className="flex items-center gap-1.5"><i className="inline-block h-1 w-6 bg-critical shadow-[0_0_6px_#f43f5e]" />{t('ui.map.attackPath')}</span>
-          <span className="flex items-center gap-1.5"><Eye size={13} />{isHead ? t('ui.map.hintEdit') : t('ui.map.hintReadOnly')}</span>
-        </div>
-      </GlassPanel>
-
-      <Dialog open={!!draft} title={t('ui.map.newConnection')} onClose={() => setDraft(null)} testId="connect-dialog"
-        footer={<>
-          <button type="button" className="btn-ghost" onClick={() => setDraft(null)}>{t('ui.common.cancel')}</button>
-          <button type="button" className="btn-neon" disabled={crud.create.isPending} data-testid="connect-save"
-            onClick={() => {
-              if (!draft) return
-              crud.create.mutate({ id: connectionId(draft.kind, draft.source, draft.target, ids), source: draft.source, target: draft.target, kind: draft.kind, label: draft.label },
-                { onSuccess: () => setDraft(null) })
-            }}>{t('ui.common.save')}</button>
-        </>}>
-        {draft && (
-          <div className="flex flex-col gap-3 text-sm">
-            <p className="text-ink-200">{t('ui.map.connectFromTo', { a: nameOf(draft.source), b: nameOf(draft.target) })}</p>
-            <label className="flex flex-col gap-1">
-              <span className="text-ink-300">{t('ui.map.kind')}</span>
-              <select className="field" value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as Kind })} data-testid="connect-kind">
-                <option value="network">{t('ui.map.flow')}</option>
-                <option value="trust">{t('ui.map.trustExplained', { a: nameOf(draft.target), b: nameOf(draft.source) })}</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-ink-300">{t('ui.map.label')}</span>
-              <input className="field" maxLength={80} value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} />
-            </label>
-            <p className="text-[12px] text-ink-400">{t('ui.map.connectNote')}</p>
-          </div>
-        )}
-      </Dialog>
-
-      <Dialog open={!!editing} title={t('ui.map.editConnection')} onClose={() => setEditing(null)} testId="edge-dialog"
-        footer={<>
-          <button type="button" className="btn-ghost btn-danger mr-auto" onClick={() => { setConfirmDelete(editing); setEditing(null) }} data-testid="edge-delete">
-            <Trash2 size={14} /> {t('ui.common.delete')}
-          </button>
-          <button type="button" className="btn-ghost" onClick={() => setEditing(null)}>{t('ui.common.cancel')}</button>
-          <button type="button" className="btn-neon" disabled={crud.update.isPending} data-testid="edge-save"
-            onClick={() => {
-              if (!editing) return
-              const { id, source, target, kind, label } = editing
-              crud.update.mutate({ id, item: { id, source, target, kind, label } }, { onSuccess: () => setEditing(null) })
-            }}>{t('ui.common.save')}</button>
-        </>}>
-        {editing && (
-          <div className="flex flex-col gap-3 text-sm">
-            <p className="mono text-ink-300">{editing.id}</p>
-            <p className="text-ink-200">{nameOf(editing.source)} → {nameOf(editing.target)}</p>
-            <label className="flex flex-col gap-1">
-              <span className="text-ink-300">{t('ui.map.kind')}</span>
-              <select className="field" value={editing.kind} onChange={(e) => setEditing({ ...editing, kind: e.target.value as Kind })}>
-                <option value="network">{t('ui.map.flow')}</option>
-                <option value="trust">{t('ui.map.trust')}</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-ink-300">{t('ui.map.label')}</span>
-              <input className="field" maxLength={80} value={editing.label} onChange={(e) => setEditing({ ...editing, label: e.target.value })} data-testid="edge-label" />
-            </label>
-          </div>
-        )}
-      </Dialog>
-
-      <ConfirmDialog open={!!confirmDelete} title={t('ui.map.deleteConnection')} danger confirmLabel={t('ui.common.delete')}
-        busy={crud.remove.isPending} onClose={() => setConfirmDelete(null)}
-        onConfirm={() => confirmDelete && crud.remove.mutate(confirmDelete.id, { onSuccess: () => setConfirmDelete(null) })}>
-        {confirmDelete && t('ui.map.deleteConnectionBody', { a: nameOf(confirmDelete.source), b: nameOf(confirmDelete.target) })}
-      </ConfirmDialog>
-    </div>
-  )
+        </Field>
+        <Field label={t("map.description")} htmlFor="cdesc">
+          <input id="cdesc" className={inputCls} maxLength={200} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </Field>
+        {dup && <p className="text-[13px] text-warning" role="alert">{t("map.duplicate", { id: dup.id })}</p>}
+        {error ? <ErrorState error={error} compact /> : null}
+      </div>
+    </Dialog>
+  );
 }

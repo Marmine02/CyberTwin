@@ -1,44 +1,27 @@
-# dependencies / envs
-node_modules/
-.venv/
+# Git ignore configuration (Updated: 2026-11-17)
+# python
+backend/.venv/
 __pycache__/
-*.pyc
-
-# build output
-dist/
-build/
-*.egg-info/
-
-# data / secrets
-*.db
-*.db-journal
-*.sqlite
-.env
-.env.*
-!.env.example
-
-# logs and caches
-logs/
-*.log
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
-htmlcov/
-.vite/
-*.tsbuildinfo
-
-# test artifacts
-test-results/
-playwright-report/
-blob-report/
-
-# OS / editor
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-
-# PowerShell module cache written when USERPROFILE is redirected during launcher tests
-Microsoft/
-
+*.db
+*.db-journal
+.env
+# node
+node_modules/
+frontend/dist/
+e2e/test-results/
+e2e/playwright-report/
+logs/
+.venv/
+venv/
+*.py[cod]
+dist/
+.env.*
+*.sqlite*
+*.log
+*.rar
+*.zip
+*.7z

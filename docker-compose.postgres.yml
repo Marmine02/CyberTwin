@@ -1,0 +1,14 @@
+# CyberTwin Postgres Overlay (Updated: 2026-11-17)
+# Overlay: run the backend on PostgreSQL instead of SQLite.
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml --profile postgres up --build
+services:
+  backend:
+    build:
+      context: ./backend
+      args:
+        EXTRAS: postgres
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cybertwin:cybertwin@postgres:5432/cybertwin
+    depends_on:
+      postgres:
+        condition: service_healthy

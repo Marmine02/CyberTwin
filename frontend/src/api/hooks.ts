@@ -1,142 +1,139 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { api } from './client'
-import type {
-  AppEvent, RecommendationsResponse, Remediation, RevisionInfo, Run, RunSummary, ScenarioId, Twin, TwinModel,
-} from './types'
-import { useApp } from '../store/app'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "./client";
+import type { RemediationAction, ScenarioId } from "./types";
+import { useUi } from "../stores/ui";
+import { useAutoplay } from "../stores/replay";
 
-export const qk = {
-  twins: ['twins'] as const,
-  revisions: (t: number) => ['revisions', t] as const,
-  model: (t: number, r: number | null) => ['model', t, r] as const,
-  runs: (t: number) => ['runs', t] as const,
-  latest: (t: number, s: string | null, r: number | null) => ['latest', t, s, r] as const,
-  run: (id: number) => ['run', id] as const,
-  recs: (t: number, s: string, r: number | null, f: string | null) => ['recs', t, s, r, f] as const,
-  remediations: (t: number) => ['remediations', t] as const,
-  events: ['events'] as const,
+export const keys = {
+  twin: (id: string, rev: number | null) => ["twin", id, rev] as const,
+  twins: ["twins"] as const,
+  revisions: (id: string) => ["revisions", id] as const,
+  simulation: (sid: string) => ["simulation", sid] as const,
+  simulations: (id: string) => ["simulations", id] as const,
+  scenarios: ["scenarios"] as const,
+  recs: (id: string, rev: number, sc: ScenarioId, foothold?: string) => ["recs", id, rev, sc, foothold ?? ""] as const,
+  remediations: (id: string) => ["remediations", id] as const,
+  events: (id: string) => ["events", id] as const,
+  ai: ["ai-status"] as const,
+  catalog: ["catalog"] as const,
+};
+
+/** Current twin state at the viewed revision (head by default). */
+export function useTwin() {
+  const { twinId, viewRevision } = useUi();
+  return useQuery({
+    queryKey: keys.twin(twinId, viewRevision),
+    queryFn: () => api.twin(twinId, viewRevision ?? undefined),
+  });
 }
 
-export function useTwins() {
-  const setTwin = useApp((s) => s.setTwin)
-  const twinId = useApp((s) => s.twinId)
-  const q = useQuery({ queryKey: qk.twins, queryFn: ({ signal }) => api.get<Twin[]>('/twins', signal) })
-  useEffect(() => {
-    const first = q.data?.[0]
-    if (first && (twinId === null || !q.data?.some((t) => t.id === twinId))) setTwin(first.id)
-  }, [q.data, twinId, setTwin])
-  return q
+/** Twin state at a specific revision (e.g. the revision a simulation ran on). */
+export function useTwinAt(revision: number | null | undefined) {
+  const twinId = useUi((s) => s.twinId);
+  return useQuery({
+    queryKey: keys.twin(twinId, revision ?? null),
+    queryFn: () => api.twin(twinId, revision ?? undefined),
+    enabled: revision !== undefined && revision !== null,
+    staleTime: Infinity, // revisions are immutable
+  });
 }
 
-export function useCurrentTwin(): Twin | undefined {
-  const twinId = useApp((s) => s.twinId)
-  const { data } = useTwins()
-  return data?.find((t) => t.id === twinId)
-}
-
-/** Revision being viewed: the explicit pick, else the twin's latest. */
-export function useViewedRevision(): number | null {
-  const rev = useApp((s) => s.revision)
-  const twin = useCurrentTwin()
-  return rev ?? twin?.head_revision ?? null
-}
+export const useTwins = () => useQuery({ queryKey: keys.twins, queryFn: api.twins });
 
 export function useRevisions() {
-  const twinId = useApp((s) => s.twinId)
-  return useQuery({
-    queryKey: qk.revisions(twinId ?? 0),
-    queryFn: ({ signal }) => api.get<RevisionInfo[]>(`/twins/${twinId}/revisions`, signal),
-    enabled: twinId !== null,
-  })
+  const twinId = useUi((s) => s.twinId);
+  return useQuery({ queryKey: keys.revisions(twinId), queryFn: () => api.revisions(twinId) });
 }
 
-export function useModel(revisionOverride?: number | null) {
-  const twinId = useApp((s) => s.twinId)
-  const viewed = useViewedRevision()
-  const rev = revisionOverride === undefined ? viewed : revisionOverride
+export function useSimulation(sid: string | null | undefined) {
   return useQuery({
-    queryKey: qk.model(twinId ?? 0, rev),
-    queryFn: ({ signal }) => api.get<TwinModel>(`/twins/${twinId}/model${rev ? `?revision=${rev}` : ''}`, signal),
-    enabled: twinId !== null && rev !== null,
-  })
+    queryKey: keys.simulation(sid ?? "-"),
+    queryFn: () => api.simulation(sid as string),
+    enabled: !!sid,
+    staleTime: Infinity, // runs are immutable
+  });
 }
 
-export function useLatestRun(scenario: ScenarioId | null, revision?: number | null) {
-  const twinId = useApp((s) => s.twinId)
-  const viewed = useViewedRevision()
-  const rev = revision === undefined ? viewed : revision
-  const params = new URLSearchParams()
-  if (scenario) params.set('scenario', scenario)
-  if (rev) params.set('revision', String(rev))
-  return useQuery({
-    queryKey: qk.latest(twinId ?? 0, scenario, rev),
-    queryFn: ({ signal }) => api.get<Run | null>(`/twins/${twinId}/simulations/latest?${params.toString()}`, signal),
-    enabled: twinId !== null && rev !== null,
-  })
+export function useSimulations() {
+  const twinId = useUi((s) => s.twinId);
+  return useQuery({ queryKey: keys.simulations(twinId), queryFn: () => api.simulations(twinId) });
 }
 
-export function useRuns() {
-  const twinId = useApp((s) => s.twinId)
-  return useQuery({
-    queryKey: qk.runs(twinId ?? 0),
-    queryFn: ({ signal }) => api.get<RunSummary[]>(`/twins/${twinId}/simulations?limit=200`, signal),
-    enabled: twinId !== null,
-  })
+/** The simulation the user is "looking at": last one they ran, else the latest stored run. */
+export function useCurrentSimulation() {
+  const { twinId, lastSimulation } = useUi();
+  const sims = useSimulations();
+  const sid = lastSimulation[twinId] ?? sims.data?.[0]?.id ?? null;
+  const sim = useSimulation(sid);
+  return { sid, sim, sims };
 }
 
-export function useRun(id: number | null) {
-  return useQuery({
-    queryKey: qk.run(id ?? 0),
-    queryFn: ({ signal }) => api.get<Run>(`/simulations/${id}`, signal),
-    enabled: id !== null,
-  })
-}
+export const useScenarios = () => useQuery({ queryKey: keys.scenarios, queryFn: api.scenarios, staleTime: Infinity });
+export const useCatalog = () => useQuery({ queryKey: keys.catalog, queryFn: api.catalog, staleTime: Infinity });
+export const useAiStatus = () => useQuery({ queryKey: keys.ai, queryFn: api.aiStatus, staleTime: 60_000 });
 
-export function useRecommendations(scenario: ScenarioId, revision: number | null, foothold: string | null) {
-  const twinId = useApp((s) => s.twinId)
-  const p = new URLSearchParams({ scenario })
-  if (revision) p.set('revision', String(revision))
-  if (foothold) p.set('foothold', foothold)
-  return useQuery({
-    queryKey: qk.recs(twinId ?? 0, scenario, revision, foothold),
-    queryFn: ({ signal }) => api.get<RecommendationsResponse>(`/twins/${twinId}/recommendations?${p.toString()}`, signal),
-    enabled: twinId !== null && revision !== null,
-  })
+export function useEvents() {
+  const twinId = useUi((s) => s.twinId);
+  return useQuery({ queryKey: keys.events(twinId), queryFn: () => api.events(twinId), refetchInterval: 15_000 });
 }
 
 export function useRemediations() {
-  const twinId = useApp((s) => s.twinId)
-  return useQuery({
-    queryKey: qk.remediations(twinId ?? 0),
-    queryFn: ({ signal }) => api.get<Remediation[]>(`/twins/${twinId}/remediations`, signal),
-    enabled: twinId !== null,
-  })
+  const twinId = useUi((s) => s.twinId);
+  return useQuery({ queryKey: keys.remediations(twinId), queryFn: () => api.remediations(twinId) });
 }
 
-export function useEvents() {
+export function useRecommendations(revision: number | undefined, scenario: ScenarioId, foothold?: string) {
+  const twinId = useUi((s) => s.twinId);
   return useQuery({
-    queryKey: qk.events,
-    queryFn: ({ signal }) => api.get<{ unread: number; items: AppEvent[] }>('/events?limit=40', signal),
-  })
+    queryKey: keys.recs(twinId, revision ?? 0, scenario, foothold),
+    queryFn: () => api.recommendations(twinId, scenario, foothold),
+    enabled: revision !== undefined,
+    staleTime: Infinity,
+  });
 }
 
-/** Invalidate everything that depends on the model or runs (after edits, runs, fixes, resets). */
-export function useInvalidateAll() {
-  const qc = useQueryClient()
-  return () => qc.invalidateQueries()
+/** Invalidate everything that depends on the twin's head revision. */
+export function useInvalidateTwin() {
+  const qc = useQueryClient();
+  const twinId = useUi((s) => s.twinId);
+  return () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: ["twin", twinId] }),
+      qc.invalidateQueries({ queryKey: keys.revisions(twinId) }),
+      qc.invalidateQueries({ queryKey: keys.events(twinId) }),
+      qc.invalidateQueries({ queryKey: keys.simulations(twinId) }),
+      qc.invalidateQueries({ queryKey: keys.remediations(twinId) }),
+    ]);
 }
 
 export function useRunSimulation() {
-  const twinId = useApp((s) => s.twinId)
-  const invalidate = useInvalidateAll()
+  const qc = useQueryClient();
+  const { twinId, setLastSimulation, setLastScenario } = useUi();
   return useMutation({
-    mutationFn: (v: { scenario: ScenarioId; revision?: number | null; foothold?: string | null }) =>
-      api.post<Run>(`/twins/${twinId}/simulations`, {
-        scenario: v.scenario,
-        revision: v.revision ?? undefined,
-        params: v.foothold ? { foothold: v.foothold } : {},
-      }),
-    onSuccess: () => void invalidate(),
-  })
+    mutationFn: (v: { scenario: ScenarioId; params?: Record<string, string>; revision?: number; autoplay?: boolean }) =>
+      api.simulate(twinId, v.scenario, v.params ?? {}, v.revision),
+    onSuccess: (run, v) => {
+      // before the run becomes "current": the page that shows it must see the autoplay request on first load
+      if (v.autoplay) useAutoplay.getState().request(run.id);
+      qc.setQueryData(keys.simulation(run.id), run);
+      setLastSimulation(twinId, run.id);
+      setLastScenario(run.scenario);
+      void qc.invalidateQueries({ queryKey: keys.simulations(twinId) });
+      void qc.invalidateQueries({ queryKey: keys.events(twinId) });
+      void qc.invalidateQueries({ queryKey: ["twin", twinId] });
+    },
+  });
+}
+
+export function useApplyRemediation() {
+  const invalidate = useInvalidateTwin();
+  const { twinId, setLastSimulation } = useUi();
+  return useMutation({
+    mutationFn: (v: { scenario: ScenarioId; actions: RemediationAction[]; params?: Record<string, string> }) =>
+      api.applyRemediation(twinId, v.scenario, v.actions, v.params ?? {}),
+    onSuccess: async (out) => {
+      setLastSimulation(twinId, out.comparison.after_simulation_id);
+      await invalidate();
+    },
+  });
 }

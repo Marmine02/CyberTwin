@@ -1,324 +1,332 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowRight, CheckSquare, GitCompare, RotateCcw, ShieldCheck, Square } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router'
-import { api } from '../api/client'
+import { ArrowRight, Check, RotateCcw, ShieldCheck, Undo2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
+import { api } from "../api/client";
 import {
-  useCurrentTwin, useInvalidateAll, useModel, useRecommendations, useRemediations, useRevisions, useRun,
-} from '../api/hooks'
-import { SCENARIOS, type Comparison, type Remediation as Rem, type ScenarioId, type SimResult } from '../api/types'
-import { TopologyMap } from '../components/map/TopologyMap'
-import { CountUp } from '../components/ui/CountUp'
-import { ConfirmDialog } from '../components/ui/Dialog'
-import { GlassPanel } from '../components/ui/GlassPanel'
-import { Empty, ErrorState, Loading } from '../components/ui/States'
-import type { Lang } from '../i18n'
-import { fmtDateTime, fmtDelta, fmtProb, fmtScore } from '../i18n/format'
-import { renderAction, renderMessage } from '../i18n/messages'
-import { errorText } from '../lib/errors'
-import { assetNames, vulnCves } from '../lib/model'
-import { useApp } from '../store/app'
-import { toast } from '../store/toast'
+  useApplyRemediation,
+  useInvalidateTwin,
+  useRecommendations,
+  useRemediations,
+  useRevisions,
+  useRunSimulation,
+  useSimulation,
+  useTwin,
+} from "../api/hooks";
+import { SCENARIO_IDS, type Comparison, type PathRef, type Recommendation, type ScenarioId, type TwinSnapshot } from "../api/types";
+import { Button, ConfirmDialog, CountUp, EmptyState, ErrorState, Loading, Panel, SeverityBadge, Skeleton, Tabs } from "../components/ui";
+import { cx, inputCls } from "../components/cls";
+import { TwinMap } from "../features/map/TwinMap";
+import { actionLabel } from "../features/remediation/labels";
+import { assetNames, pathChain } from "../features/sim/narrate";
+import { ResidualList } from "../features/remediation/ResidualExposure";
+import { useMsg } from "../i18n/engine";
+import { errorMessage } from "../lib/format";
+import { BAND_COLOR, displayScore, scoreBand } from "../lib/score";
+import { useToasts, useUi } from "../stores/ui";
+import { useTour } from "../stores/tour";
 
-interface CompareView {
-  revA: number
-  revB: number
-  comparison: Comparison
-  resultA: SimResult | null
-  resultB: SimResult | null
-  remediation?: Rem
-}
+export function RemediationPage() {
+  const { t } = useTranslation();
+  const tt = t as unknown as (k: string, o?: Record<string, unknown>) => string;
+  const [params, setParams] = useSearchParams();
+  const { lastScenario, viewRevision } = useUi();
+  const scenario = (params.get("scenario") as ScenarioId | null) ?? lastScenario;
+  const twin = useTwin();
+  const head = twin.data?.twin.head_revision;
+  const recs = useRecommendations(viewRevision === null ? head : undefined, scenario);
+  const remeds = useRemediations();
+  const apply = useApplyRemediation();
+  const push = useToasts((s) => s.push);
+  const selKey = `${scenario}|${head ?? 0}`;
+  const [sel, setSel] = useState<{ key: string; ids: string[] }>({ key: selKey, ids: [] });
+  const selected = sel.key === selKey ? sel.ids : [];
+  const setSelected = (f: string[] | ((s: string[]) => string[])) =>
+    setSel({ key: selKey, ids: typeof f === "function" ? f(selected) : f });
+  const [confirming, setConfirming] = useState(false);
+  const [lastApplied, setLastApplied] = useState<{ comparison: Comparison; remediationId: string } | null>(null);
 
-function scoreClass(s: number) {
-  return s >= 80 ? 'neon-text-secure' : s >= 50 ? 'neon-text-medium' : 'neon-text-critical'
-}
-
-function MiniMap({ rev, result, label }: { rev: number; result: SimResult | null; label: string }) {
-  const model = useModel(rev)
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <div className="text-[12px] uppercase tracking-wider text-ink-400">{label}</div>
-      <div className="relative h-[260px] overflow-hidden rounded-xl border border-cyan/12">
-        {model.data ? <TopologyMap model={model.data} result={result} pathId={result?.primary_path} ariaLabel={label} compact />
-          : model.isError ? <ErrorState error={model.error} /> : <Loading rows={4} />}
-      </div>
-    </div>
-  )
-}
-
-function CompareResult({ view, onRevert, reverting }: { view: CompareView; onRevert?: () => void; reverting: boolean }) {
-  const { t, i18n } = useTranslation()
-  const lang = i18n.language as Lang
-  const model = useModel(view.revB)
-  const names = useMemo(() => assetNames(model.data), [model.data])
-  const c = view.comparison
-  const findings = new Map((view.resultB?.findings ?? []).map((f) => [f.id, f]))
-  const route = (assets: string[]) => assets.map((a) => names[a] ?? a).join(' → ')
-  const canRevert = view.remediation && view.remediation.reverted_by_revision === null && onRevert
-  return (
-    <div className="flex flex-col gap-4" data-testid="compare-result">
-      <div className="flex flex-wrap items-center gap-6">
-        <div>
-          <div className="text-[12px] uppercase tracking-wider text-ink-400">{t('ui.rem.before')} · r{view.revA}</div>
-          <div className={`num text-[40px] leading-none ${scoreClass(c.before.score)}`} data-testid="score-before">{fmtScore(lang, c.before.score)}</div>
-        </div>
-        <ArrowRight className="text-ink-400" />
-        <div>
-          <div className="text-[12px] uppercase tracking-wider text-ink-400">{t('ui.rem.after')} · r{view.revB}</div>
-          <CountUp value={c.after.score} format={(v) => fmtScore(lang, v)} className={`num block text-[40px] leading-none ${scoreClass(c.after.score)}`} testId="score-after" />
-        </div>
-        <div className="chip border-secure/40 bg-secure/10 text-emerald-200 text-[14px]">{fmtDelta(lang, c.score_delta)} {t('ui.common.points')}</div>
-        {view.remediation?.reverted_by_revision != null && (
-          <span className="chip text-ink-300" data-testid="reverted-chip">{t('ui.rem.revertedIn', { n: view.remediation.reverted_by_revision })}</span>
-        )}
-        {canRevert && (
-          <button type="button" className="btn-ghost btn-danger ml-auto" onClick={onRevert} disabled={reverting} data-testid="revert-button">
-            <RotateCcw size={15} /> {t('ui.rem.revert')}
-          </button>
-        )}
-      </div>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <MiniMap rev={view.revA} result={view.resultA} label={`${t('ui.rem.before')} · r${view.revA}`} />
-        <MiniMap rev={view.revB} result={view.resultB} label={`${t('ui.rem.after')} · r${view.revB}`} />
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section>
-          <h3 className="panel-title mb-1 text-[13px]">{t('ui.rem.blocked', { count: c.blocked_paths.length })}</h3>
-          {c.blocked_paths.length ? (
-            <ul className="flex flex-col gap-1 text-[13px]" data-testid="blocked-paths">
-              {c.blocked_paths.map((p) => (
-                <li key={p.id} className="text-ink-300"><span className="mono mr-1 text-secure">{p.id}</span>
-                  <s className="decoration-critical decoration-2">{route(p.assets)}</s> <span className="text-ink-400">({fmtProb(lang, p.likelihood)})</span></li>
-              ))}
-            </ul>
-          ) : <p className="text-[13px] text-ink-400">{t('ui.common.none')}</p>}
-          {c.reduced_paths.length > 0 && (
-            <>
-              <h3 className="panel-title mt-3 mb-1 text-[13px]">{t('ui.rem.reduced', { count: c.reduced_paths.length })}</h3>
-              <ul className="flex flex-col gap-1 text-[13px] text-ink-200">
-                {c.reduced_paths.map((p) => <li key={p.id}><span className="mono mr-1">{p.id}</span>{fmtProb(lang, p.likelihood)} → {fmtProb(lang, p.likelihood_after)}</li>)}
-              </ul>
-            </>
-          )}
-          {c.new_paths.length > 0 && (
-            <>
-              <h3 className="panel-title mt-3 mb-1 text-[13px]">{t('ui.rem.newPaths', { count: c.new_paths.length })}</h3>
-              <ul className="flex flex-col gap-1 text-[13px] text-orange-200">
-                {c.new_paths.map((p) => <li key={p.id}><span className="mono mr-1">{p.id}</span>{route(p.assets)} ({fmtProb(lang, p.likelihood)})</li>)}
-              </ul>
-            </>
-          )}
-        </section>
-        <section>
-          <h3 className="panel-title mb-1 text-[13px]">{t('ui.rem.perAsset')}</h3>
-          {c.per_asset_delta.length ? (
-            <table className="w-full text-[13px]" data-testid="asset-deltas">
-              <thead><tr className="text-left text-ink-400"><th className="py-1 font-medium">{t('ui.form.asset')}</th><th className="font-medium">{t('ui.rem.before')}</th><th className="font-medium">{t('ui.rem.after')}</th><th className="font-medium">Δ</th></tr></thead>
-              <tbody>
-                {c.per_asset_delta.map((d) => (
-                  <tr key={d.asset_id} className="border-t border-cyan/8">
-                    <td className="py-1 text-ink-100" translate="no">{names[d.asset_id] ?? d.asset_id}</td>
-                    <td className="num">{fmtScore(lang, d.before)}</td><td className="num">{fmtScore(lang, d.after)}</td>
-                    <td className={`num ${d.delta < 0 ? 'text-secure' : 'text-critical'}`}>{fmtDelta(lang, d.delta)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : <p className="text-[13px] text-ink-400">{t('ui.common.none')}</p>}
-          <h3 className="panel-title mt-3 mb-1 text-[13px]">{t('ui.overview.residual')}</h3>
-          <ul className="flex flex-col gap-1 text-[13px] text-ink-200" data-testid="residual-list">
-            {c.residual_exposure.map((id) => {
-              const f = findings.get(id)
-              return <li key={id}>• {f ? renderMessage(t, lang, f.message, names) : id}</li>
-            })}
-          </ul>
-        </section>
-      </div>
-    </div>
-  )
-}
-
-export function Remediation() {
-  const { t, i18n } = useTranslation()
-  const lang = i18n.language as Lang
-  const [params, setParams] = useSearchParams()
-  const twin = useCurrentTwin()
-  const setRevision = useApp((s) => s.setRevision)
-  const appScenario = useApp((s) => s.scenario)
-  const foothold = useApp((s) => s.foothold)
-  const scenario = (params.get('scenario') as ScenarioId | null) ?? appScenario
-  const setScenario = useApp((s) => s.setScenario)
-  const head = twin?.head_revision ?? null
-  const recs = useRecommendations(scenario, head, ['lateral_movement', 'privilege_escalation'].includes(scenario) ? foothold : null)
-  const remediations = useRemediations()
-  const revisions = useRevisions()
-  const invalidate = useInvalidateAll()
-  const model = useModel(head)
-  const names = useMemo(() => assetNames(model.data), [model.data])
-  const cves = useMemo(() => vulnCves(model.data), [model.data])
-  const [selected, setSelected] = useState<string[]>([])
-  const [confirm, setConfirm] = useState(false)
-  const [confirmRevert, setConfirmRevert] = useState<Rem | null>(null)
-  const [shown, setShown] = useState<number | null>(null)
-
-  // ?select=<recommendation id> from the Vulnerabilities page
-  const pre = params.get('select')
-  const [handledPre, setHandledPre] = useState<string | null>(null)
-  if (pre && handledPre !== pre) {
-    setHandledPre(pre)
-    setSelected((s) => (s.includes(pre) ? s : [...s, pre]))
+  // preselect from ?fix=<vuln> once the recommendations for this revision are known
+  const fix = params.get("fix");
+  const [fixHandled, setFixHandled] = useState<string | null>(null);
+  if (fix && recs.data && fixHandled !== `${fix}|${selKey}`) {
+    setFixHandled(`${fix}|${selKey}`);
+    const r = recs.data.recommendations.find((x) => x.fixes_vuln_ids.includes(fix));
+    if (r && !selected.includes(r.id)) setSel({ key: selKey, ids: [...selected, r.id] });
   }
 
-  // ?compare=a,b from the no-path state
-  const compareParam = params.get('compare')
-  const [ca, cb] = (compareParam ?? '').split(',').map(Number)
-  const compareQ = useQuery({
-    queryKey: ['compare', twin?.id, ca, cb, scenario],
-    queryFn: () => api.post<{ revision_a: number; revision_b: number; comparison: Comparison; result_a: SimResult; result_b: SimResult }>(
-      `/twins/${twin?.id}/compare`, { scenario, revision_a: ca, revision_b: cb }),
-    enabled: !!twin && !!ca && !!cb && ca !== cb,
-  })
-  const [pickA, setPickA] = useState<number>(1)
-  const [pickB, setPickB] = useState<number | null>(null)
+  const latestRecord = remeds.data?.[0];
+  const comparison: Comparison | null =
+    lastApplied?.comparison ?? (latestRecord && latestRecord.to_revision === head ? latestRecord.comparison : null);
+  const chosen = (recs.data?.recommendations ?? []).filter((r) => selected.includes(r.id));
 
-  const apply = useMutation({
-    mutationFn: () => {
-      const actions = (recs.data?.recommendations ?? []).filter((r) => selected.includes(r.id)).sort((a, b) => a.rank - b.rank).map((r) => r.action)
-      return api.post<Rem>(`/twins/${twin?.id}/remediations/apply`, { actions, scenario, params: foothold && ['lateral_movement', 'privilege_escalation'].includes(scenario) ? { foothold } : {} })
-    },
-    onSuccess: (r) => {
-      setConfirm(false)
-      setSelected([])
-      setRevision(null)
-      setShown(r.id)
-      setParams({}, { replace: true })
-      void invalidate()
-      toast.success(t('ui.rem.applied', { n: r.to_revision }), t('ui.rem.appliedBody', { a: fmtScore(lang, r.comparison.before.score), b: fmtScore(lang, r.comparison.after.score) }))
-    },
-    onError: (e) => { setConfirm(false); toast.error(t('ui.crud.failed'), errorText(t, e)) },
-  })
-  const revert = useMutation({
-    mutationFn: (id: number) => api.post<{ revision: { number: number }; run: { score: number } }>(`/remediations/${id}/revert`),
-    onSuccess: (r) => {
-      setConfirmRevert(null)
-      setRevision(null)
-      void invalidate()
-      toast.success(t('ui.rem.reverted', { n: r.revision.number }), t('ui.rem.revertedBody', { score: fmtScore(lang, r.run.score) }))
-    },
-    onError: (e) => { setConfirmRevert(null); toast.error(t('ui.crud.failed'), errorText(t, e)) },
-  })
+  const doApply = () =>
+    apply.mutateAsync({ scenario, actions: chosen.map((c) => c.action) }).then((out) => {
+      setConfirming(false);
+      setSelected([]);
+      setLastApplied({ comparison: out.comparison, remediationId: out.remediation_id });
+      useTour.getState().event("applied");
+      push({ tone: "success", title: t("remed.applied", { n: out.revision.number }),
+        body: t("remed.appliedBody", { before: displayScore(out.comparison.before_score), after: displayScore(out.comparison.after_score), count: out.comparison.blocked_paths.length }) });
+    }, () => undefined /* shown in the dialog via apply.error */);
 
-  const current = remediations.data?.find((r) => r.id === shown) ?? remediations.data?.[0]
-  const beforeRun = useRun(current?.comparison.before.run_id ?? null)
-  const afterRun = useRun(current?.comparison.after.run_id ?? null)
-  const view: CompareView | null = compareQ.data
-    ? { revA: compareQ.data.revision_a, revB: compareQ.data.revision_b, comparison: compareQ.data.comparison, resultA: compareQ.data.result_a, resultB: compareQ.data.result_b }
-    : current ? { revA: current.from_revision, revB: current.to_revision, comparison: current.comparison, resultA: beforeRun.data?.result ?? null, resultB: afterRun.data?.result ?? null, remediation: current } : null
-
-  const list = recs.data?.recommendations ?? []
-  const chosen = list.filter((r) => selected.includes(r.id)).sort((a, b) => a.rank - b.rank)
-  const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
-
+  if (twin.isError) return <div className="pt-4"><ErrorState error={twin.error} onRetry={() => void twin.refetch()} /></div>;
   return (
-    <div className="grid min-h-full grid-cols-12 gap-3 pb-2" data-testid="page-remediation">
-      <GlassPanel title={t('ui.rem.recommendations')} index={0} className="col-span-12 xl:col-span-5" testId="recs-panel">
-        <div className="flex flex-col gap-3" data-tour="fix">
-          <div className="flex flex-wrap items-center gap-2 text-[13px]">
-            <label className="flex items-center gap-2"><span className="text-ink-300">{t('ui.attack.scenario')}</span>
-              <select className="field w-auto" value={scenario} onChange={(e) => { setScenario(e.target.value as ScenarioId); setParams({}, { replace: true }); setSelected([]) }} data-testid="rem-scenario">
-                {SCENARIOS.map((s) => <option key={s} value={s}>{t(`scenario.${s}.name`)}</option>)}
-              </select>
-            </label>
-            {recs.data && <span className="text-ink-300">r{recs.data.revision} · {t('ui.common.score')} <b className={`num text-[16px] ${scoreClass(recs.data.score)}`}>{fmtScore(lang, recs.data.score)}</b></span>}
-          </div>
-          <p className="text-[12.5px] text-ink-400">{t('ui.rem.intro')}</p>
-          {recs.isLoading && <Loading rows={5} />}
-          {recs.isError && <ErrorState error={recs.error} onRetry={() => void recs.refetch()} />}
-          {recs.data && !list.length && <Empty icon={<ShieldCheck size={22} />}>{t('ai.plan_empty')}</Empty>}
-          <ul className="flex flex-col gap-1.5" data-testid="rec-list">
-            {list.map((r) => {
-              const on = selected.includes(r.id)
-              return (
-                <li key={r.id}>
-                  <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(r.id)} data-testid={`rec-${r.rank}`}
-                    className={`flex w-full items-start gap-2.5 rounded-xl border p-2.5 text-left transition-colors ${on ? 'border-cyan/60 bg-cyan/10' : 'border-cyan/12 hover:border-cyan/35'}`}>
-                    {on ? <CheckSquare size={18} className="mt-0.5 shrink-0 text-cyan" /> : <Square size={18} className="mt-0.5 shrink-0 text-ink-400" />}
-                    <span className="num w-5 shrink-0 text-[16px] text-ink-300">{r.rank}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[13.5px] leading-snug text-ink-100">{renderAction(t, lang, r.action, cves, names)}</span>
-                      <span className="text-[11.5px] text-ink-400">{t(`ui.rem.kind.${r.kind}`)} · {t('ui.rem.standalone')} {fmtDelta(lang, r.standalone_delta)}</span>
-                    </span>
-                    <span className="shrink-0 text-right">
-                      <span className="num block text-[17px] text-secure">{fmtDelta(lang, r.delta_score)}</span>
-                      <span className="text-[11px] text-ink-400">→ {fmtScore(lang, r.score_after)}</span>
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-ghost" disabled={!list.length} onClick={() => setSelected(list.slice(0, 3).map((r) => r.id))} data-testid="select-top3">{t('ui.rem.top3')}</button>
-            <button type="button" className="btn-neon ml-auto" disabled={!chosen.length || apply.isPending} onClick={() => setConfirm(true)} data-testid="apply-button">
-              <ShieldCheck size={16} /> {chosen.length ? t('ui.rem.apply', { count: chosen.length }) : t('ui.rem.applyNone')}
-            </button>
-          </div>
-        </div>
-      </GlassPanel>
-
-      <GlassPanel title={compareQ.data ? t('ui.rem.compareTitle', { a: ca, b: cb }) : t('ui.rem.beforeAfter')} index={1} className="col-span-12 xl:col-span-7" testId="compare-panel"
-        actions={compareParam && <button type="button" className="text-[12px] text-cyan underline" onClick={() => setParams({}, { replace: true })}>{t('ui.rem.showLatest')}</button>}>
-        <div data-tour="compare">
-          {compareQ.isLoading && <Loading rows={6} />}
-          {compareQ.isError && <ErrorState error={compareQ.error} />}
-          {!compareQ.isLoading && (view
-            ? <CompareResult view={view} reverting={revert.isPending} onRevert={view.remediation ? () => setConfirmRevert(view.remediation ?? null) : undefined} />
-            : <Empty>{t('ui.rem.noneYet')}</Empty>)}
-          <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-cyan/10 pt-3 text-[13px]">
-            <GitCompare size={16} className="mb-2 text-ink-400" />
-            <label className="flex flex-col gap-1"><span className="text-ink-300">{t('ui.rem.compareA')}</span>
-              <select className="field w-auto font-mono" value={pickA} onChange={(e) => setPickA(Number(e.target.value))}>
-                {revisions.data?.map((r) => <option key={r.number} value={r.number}>r{r.number}</option>)}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1"><span className="text-ink-300">{t('ui.rem.compareB')}</span>
-              <select className="field w-auto font-mono" value={pickB ?? head ?? ''} onChange={(e) => setPickB(Number(e.target.value))}>
-                {revisions.data?.map((r) => <option key={r.number} value={r.number}>r{r.number}</option>)}
-              </select>
-            </label>
-            <button type="button" className="btn-ghost" disabled={pickA === (pickB ?? head)} data-testid="compare-button"
-              onClick={() => setParams({ compare: `${pickA},${pickB ?? head}`, scenario })}>{t('ui.rem.compare')}</button>
-          </div>
-        </div>
-      </GlassPanel>
-
-      <GlassPanel title={t('ui.rem.history')} index={2} className="col-span-12">
-        {remediations.isLoading ? <Loading /> : !remediations.data?.length ? <Empty>{t('ui.rem.noneYet')}</Empty> : (
-          <ul className="flex flex-col gap-1.5 text-[13px]" data-testid="rem-history">
-            {remediations.data.map((r) => (
-              <li key={r.id} className={`flex flex-wrap items-center gap-2 rounded-lg px-2 py-1.5 ${r.id === current?.id && !compareQ.data ? 'bg-cyan/8' : ''}`}>
-                <button type="button" className="mono text-cyan underline" onClick={() => { setShown(r.id); setParams({}, { replace: true }) }}>#{r.id}</button>
-                <span className="text-ink-200">r{r.from_revision} → r{r.to_revision}</span>
-                <span className="text-ink-300">{t(`scenario.${r.scenario}.name`)}</span>
-                <span className="num text-[15px]">{fmtScore(lang, r.comparison.before.score)} → {fmtScore(lang, r.comparison.after.score)}</span>
-                <span className="text-ink-400">{t('ui.rem.actionsCount', { count: r.actions.length })} · {fmtDateTime(lang, r.created_at)}</span>
-                {r.reverted_by_revision !== null && <span className="chip text-ink-300">{t('ui.rem.revertedIn', { n: r.reverted_by_revision })}</span>}
-              </li>
-            ))}
-          </ul>
+    <div className="grid grid-cols-12 gap-3 pt-4">
+      <Panel title={t("remed.recommended")} className="col-span-12 xl:col-span-5" bodyClass="flex flex-col gap-3" testId="panel-recs"
+        actions={
+          <select aria-label={t("remed.scenario")} className={`${inputCls} w-[220px]!`} value={scenario} data-testid="remed-scenario"
+            onChange={(e) => setParams({ scenario: e.target.value })}>
+            {SCENARIO_IDS.map((s) => <option key={s} value={s}>{t(`scenario.${s}`)}</option>)}
+          </select>
+        }>
+        {viewRevision !== null ? <p className="text-[13px] text-warning">{t("remed.readOnly")}</p> :
+          recs.isError ? <ErrorState error={recs.error} onRetry={() => void recs.refetch()} /> :
+          !recs.data ? <Loading label={t("remed.computing")} /> : (
+          <>
+            <p className="text-[12.5px] text-ink-dim">{t("remed.baseline", { score: displayScore(recs.data.baseline_score), rev: recs.data.revision })}</p>
+            {recs.data.recommendations.length > 0 && recs.data.recommendations.every((r) => r.expected_delta_score <= 0) && (
+              <p className="rounded-lg bg-secure/[0.07] px-3 py-2 text-[12.5px] text-ink-dim" data-testid="recs-residual-only">
+                {t("ux.remed.residualOnly", { rev: recs.data.revision })}
+              </p>
+            )}
+            {recs.data.recommendations.length === 0 ? <EmptyState icon={<ShieldCheck size={26} className="text-secure" />} title={t("remed.none")} body={t("remed.noneBody")} /> : (
+              <ul className="flex flex-col gap-2" data-testid="rec-list">
+                {recs.data.recommendations.map((r, i) => <RecRow key={r.id} r={r} rank={i + 1} checked={selected.includes(r.id)}
+                  onToggle={() => setSelected((s) => (s.includes(r.id) ? s.filter((x) => x !== r.id) : [...s, r.id]))} />)}
+              </ul>
+            )}
+            <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
+              <Button disabled={!(recs.data?.recommendations ?? []).some((r) => r.expected_delta_score > 0)} data-tour="select-top3"
+                onClick={() => setSelected((recs.data?.recommendations ?? []).filter((r) => r.expected_delta_score > 0).slice(0, 3).map((r) => r.id))} data-testid="select-top3">
+                {t("remed.selectTop3")}
+              </Button>
+              <Button tone="secure" icon={<Check size={14} />} disabled={chosen.length === 0} onClick={() => setConfirming(true)} data-testid="apply-selected" data-tour="apply">
+                {t("remed.apply", { count: chosen.length })}
+              </Button>
+            </div>
+          </>
         )}
-      </GlassPanel>
+      </Panel>
 
-      <ConfirmDialog open={confirm} title={t('ui.rem.confirmTitle')} confirmLabel={t('ui.rem.apply', { count: chosen.length })} busy={apply.isPending}
-        onClose={() => setConfirm(false)} onConfirm={() => apply.mutate()} testId="apply-dialog">
-        <p>{t('ui.rem.confirmBody', { n: (head ?? 0) + 1 })}</p>
-        <ol className="mt-2 list-decimal pl-5">{chosen.map((r) => <li key={r.id}>{renderAction(t, lang, r.action, cves, names)}</li>)}</ol>
-      </ConfirmDialog>
-      <ConfirmDialog open={!!confirmRevert} danger title={t('ui.rem.revert')} confirmLabel={t('ui.rem.revert')} busy={revert.isPending}
-        onClose={() => setConfirmRevert(null)} onConfirm={() => confirmRevert && revert.mutate(confirmRevert.id)} testId="revert-dialog">
-        {confirmRevert && t('ui.rem.revertBody', { from: confirmRevert.from_revision, n: (head ?? 0) + 1 })}
+      <div className="col-span-12 flex flex-col gap-3 xl:col-span-7">
+        {comparison ? <ComparisonView comparison={comparison} /> : (
+          <Panel title={t("remed.beforeAfter")}>
+            <EmptyState icon={<ShieldCheck size={26} />} title={t("remed.noComparison")} body={t("remed.noComparisonBody")} />
+          </Panel>
+        )}
+        <History />
+      </div>
+
+      <ConfirmDialog open={confirming} title={t("remed.confirmTitle")} body={t("remed.confirmBody", { rev: head })} confirmLabel={t("remed.confirmApply")}
+        tone="secure" busy={apply.isPending} error={apply.error} onConfirm={doApply} onClose={() => { setConfirming(false); apply.reset(); }}>
+        <ul className="mt-3 flex flex-col gap-1.5 text-[13px]">
+          {chosen.map((c) => (
+            <li key={c.id} className="flex justify-between gap-3"><span>{actionLabel(tt, c.action)}</span><span className="display-num text-secure">+{c.expected_delta_score.toFixed(1)}</span></li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[12px] text-ink-faint">{t("remed.confirmNote")}</p>
       </ConfirmDialog>
     </div>
-  )
+  );
+}
+
+function RecRow({ r, rank, checked, onToggle }: { r: Recommendation; rank: number; checked: boolean; onToggle: () => void }) {
+  const { t } = useTranslation();
+  const tt = t as unknown as (k: string, o?: Record<string, unknown>) => string;
+  return (
+    <li>
+      <label className={cx("flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors",
+        checked ? "border-secure/60 bg-secure/[0.07]" : "border-line hover:bg-white/[0.03]")} data-testid={`rec-${r.id}`}>
+        <input type="checkbox" className="mt-1 accent-[#34d399]" checked={checked} onChange={onToggle} aria-describedby={`rec-d-${rank}`} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="mono text-[11px] text-ink-faint">#{rank}</span>
+            <span className="font-medium">{actionLabel(tt, r.action)}</span>
+          </div>
+          <p id={`rec-d-${rank}`} className="text-[12px] text-ink-dim">
+            {r.fixes_vuln_ids.length ? t("remed.addresses", { ids: r.fixes_vuln_ids.join(", ") }) : t("remed.boundary")}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span className="display-num text-[18px]" style={{ color: r.expected_delta_score > 0 ? "var(--color-secure)" : "var(--color-ink-faint)" }}>
+            {r.expected_delta_score > 0 ? "+" : ""}{r.expected_delta_score.toFixed(1)}
+          </span>
+          <SeverityBadge severity={r.severity} />
+        </div>
+      </label>
+    </li>
+  );
+}
+
+/** Graph nodes of a path signature ("u>v:technique" per step). */
+function sigNodes(p: PathRef): string[] {
+  const steps = p.signature.map((s) => {
+    const [from, rest = ""] = s.split(">");
+    return { from: from!, to: rest.slice(0, rest.lastIndexOf(":")) };
+  });
+  return steps.length ? [steps[0]!.from, ...steps.map((x) => x.to)] : [];
+}
+
+function ComparisonView({ comparison: c }: { comparison: Comparison }) {
+  const { t } = useTranslation();
+  const m = useMsg();
+  const tt = t as unknown as (k: string, o?: Record<string, unknown>) => string;
+  const twin = useTwin();
+  const before = useSimulation(c.before_simulation_id);
+  const after = useSimulation(c.after_simulation_id);
+  const revisions = useRevisions();
+  const invalidate = useInvalidateTwin();
+  const rerun = useRunSimulation();
+  const push = useToasts((s) => s.push);
+  const twinId = useUi((s) => s.twinId);
+  const [mode, setMode] = useState<"side" | "toggle">("side");
+  const [showAfter, setShowAfter] = useState(true);
+  const [reverting, setReverting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [beforeSnap, setBeforeSnap] = useState<TwinSnapshot | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api.twin(twinId, c.before_revision).then((s) => alive && setBeforeSnap(s.snapshot)).catch(() => undefined);
+    return () => { alive = false; };
+  }, [twinId, c.before_revision]);
+  const afterRev = useMemo(() => revisions.data?.find((r) => r.number === c.after_revision), [revisions.data, c.after_revision]);
+  const names = useMemo(() => assetNames(beforeSnap?.assets ?? twin.data?.snapshot.assets), [beforeSnap, twin.data]);
+  const sigText = (p: PathRef) => pathChain(sigNodes(p), names, tt).join(" → ");
+  const isHead = twin.data?.twin.head_revision === c.after_revision;
+
+  const doRevert = async () => {
+    if (!afterRev) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const rev = await api.revert(afterRev.id);
+      await invalidate();
+      setReverting(false);
+      // await the re-run instead of using per-call mutate callbacks: this panel unmounts once the revert is
+      // the new head, and TanStack Query skips per-call callbacks after unmount (no feedback toast).
+      try {
+        const run = await rerun.mutateAsync({ scenario: c.scenario });
+        push({ tone: "info", title: t("remed.reverted", { n: rev.number }), body: t("remed.revertedBody", { score: displayScore(run.score) }),
+          action: { label: t("ux.toast.open"), to: `/simulate?run=${run.id}` } });
+      } catch (e) {
+        push({ tone: "error", title: t("sim.failed"), body: errorMessage(e) });
+      }
+    } catch (e) { setError(e); } finally { setBusy(false); }
+  };
+
+  const mini = (which: "before" | "after") => {
+    const run = which === "before" ? before.data : after.data;
+    const snap = which === "before" ? beforeSnap : twin.data && twin.data.revision.number === c.after_revision ? twin.data.snapshot : null;
+    return (
+      <div className="flex min-h-[260px] flex-1 flex-col rounded-xl border border-line bg-bg-0/40">
+        <div className="flex items-center justify-between px-3 py-1.5 text-[12px]">
+          <span className="font-medium">{t(which === "before" ? "remed.before" : "remed.after")} · r{which === "before" ? c.before_revision : c.after_revision}</span>
+          <span className="display-num text-[16px]" style={{ color: BAND_COLOR[scoreBand(which === "before" ? c.before_score : c.after_score)] }}>
+            {displayScore(which === "before" ? c.before_score : c.after_score)}
+          </span>
+        </div>
+        <div className="relative flex-1">
+          {run && snap ? <TwinMap snapshot={snap} result={run.result} path={run.result.primary_path} compact ignoreFilters testId={`mini-${which}`} /> : <Skeleton className="absolute inset-2" />}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Panel title={t("remed.beforeAfter")} testId="panel-comparison" bodyClass="flex flex-col gap-3"
+      actions={<>
+        <Tabs label={t("remed.view")} value={mode} onChange={setMode} items={[{ id: "side", label: t("remed.sideBySide") }, { id: "toggle", label: t("remed.toggle") }]} />
+        <Button tone="danger" icon={<Undo2 size={14} />} disabled={!isHead || !afterRev} onClick={() => setReverting(true)} data-testid="revert">{t("remed.revert")}</Button>
+      </>}>
+      <div className="flex items-center gap-6">
+        <div>
+          <div className="text-[12px] text-ink-dim">{t("remed.scoreChange")}</div>
+          <div className="flex items-baseline gap-3">
+            <span className="display-num text-[30px]" style={{ color: BAND_COLOR[scoreBand(c.before_score)] }}>{displayScore(c.before_score)}</span>
+            <ArrowRight size={20} className="text-ink-faint" />
+            <span className="text-[30px]" style={{ color: BAND_COLOR[scoreBand(c.after_score)] }} data-testid="after-score"><CountUp value={displayScore(c.after_score)} /></span>
+            <span className="display-num text-[20px] text-secure" data-testid="score-delta">{c.score_delta >= 0 ? "+" : ""}<CountUp value={c.score_delta} decimals={1} /></span>
+          </div>
+        </div>
+        <dl className="ml-auto grid grid-cols-3 gap-4 text-center">
+          <div><dt className="text-[11.5px] text-ink-dim">{t("remed.blocked")}</dt><dd className="display-num text-[22px] text-secure" data-testid="blocked-count">{c.blocked_paths.length}</dd></div>
+          <div><dt className="text-[11.5px] text-ink-dim">{t("remed.reduced")}</dt><dd className="display-num text-[22px] text-medium">{c.reduced_paths.length}</dd></div>
+          <div><dt className="text-[11.5px] text-ink-dim">{t("remed.new")}</dt><dd className="display-num text-[22px] text-critical">{c.new_paths.length}</dd></div>
+        </dl>
+      </div>
+
+      {mode === "side" ? <div className="flex gap-3">{mini("before")}{mini("after")}</div> : (
+        <div className="flex flex-col gap-2">
+          <Tabs label={t("remed.toggle")} value={showAfter ? "after" : "before"} onChange={(v) => setShowAfter(v === "after")}
+            items={[{ id: "before", label: t("remed.before") }, { id: "after", label: t("remed.after") }]} />
+          <div className="flex h-[300px]">{mini(showAfter ? "after" : "before")}</div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <h3 className="panel-title mb-1 text-[12px]">{t("remed.pathChanges")}</h3>
+          <ul className="flex max-h-[200px] flex-col gap-1.5 overflow-y-auto text-[12.5px]" data-testid="blocked-paths">
+            {c.blocked_paths.map((p, i) => (
+              <li key={`b${i}`} className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-secure" />
+                <span className="text-ink-dim">{sigText(p)}</span></li>
+            ))}
+            {c.reduced_paths.map((p, i) => (
+              <li key={`r${i}`} className="text-medium">↓ {sigText(p)} ({(p.likelihood_before * 100).toFixed(1)}% → {((p.likelihood_after ?? 0) * 100).toFixed(1)}%)</li>
+            ))}
+            {c.new_paths.map((p, i) => <li key={`n${i}`} className="text-critical-ink">+ {sigText(p)}</li>)}
+            {c.blocked_paths.length + c.reduced_paths.length + c.new_paths.length === 0 && <li className="text-ink-dim">{t("remed.noPathChange")}</li>}
+          </ul>
+        </div>
+        <div>
+          <h3 className="panel-title mb-1 text-[12px]">{t("remed.perAsset")}</h3>
+          <table className="w-full text-[12.5px]">
+            <tbody>
+              {c.per_asset_delta.filter((d) => d.delta !== 0).map((d) => (
+                <tr key={d.asset_id} className="border-b border-line/50">
+                  <td className="py-1">{names.get(d.asset_id) ?? d.asset_id}</td>
+                  <td className="py-1 text-right text-ink-dim">{Math.round(d.before)} → {Math.round(d.after)}</td>
+                  <td className="display-num py-1 text-right" style={{ color: d.delta < 0 ? "var(--color-secure)" : "var(--color-critical-ink)" }}>{d.delta > 0 ? "+" : ""}{d.delta.toFixed(0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <section aria-labelledby="residual-h" data-testid="remed-residual">
+        <h3 id="residual-h" className="panel-title mb-1 text-[12px]">{t("residual.title")}</h3>
+        {after.data ? <ResidualList items={after.data.result.residual_findings ?? []} /> : <Loading />}
+      </section>
+      <details className="text-[12.5px] text-ink-dim">
+        <summary className="cursor-pointer">{t("remed.changes", { n: c.changes.length })}</summary>
+        <ul className="mt-1 ml-4 list-disc">{c.changes.map((x, i) => <li key={i}>{m(x)}</li>)}</ul>
+        <p className="mt-1">{c.applied_actions.map((a) => actionLabel(tt, a)).join(" · ")}</p>
+      </details>
+      <ConfirmDialog open={reverting} title={t("remed.revertTitle", { rev: c.after_revision })} body={t("remed.revertBody", { rev: c.before_revision })}
+        confirmLabel={t("remed.revert")} tone="danger" busy={busy} error={error} onConfirm={doRevert} onClose={() => setReverting(false)} />
+    </Panel>
+  );
+}
+
+function History() {
+  const { t } = useTranslation();
+  const tt = t as unknown as (k: string, o?: Record<string, unknown>) => string;
+  const remeds = useRemediations();
+  if (!remeds.data || remeds.data.length === 0) return null;
+  return (
+    <Panel title={t("remed.history")}>
+      <ul className="flex flex-col gap-1.5 text-[12.5px]">
+        {remeds.data.map((r) => (
+          <li key={r.id} className="flex items-center gap-3">
+            <RotateCcw size={13} className="text-ink-faint" />
+            <span className="mono">r{r.from_revision} → r{r.to_revision}</span>
+            <span className="flex-1 truncate text-ink-dim">{r.actions.map((a) => actionLabel(tt, a)).join(" · ")}</span>
+            <span className="display-num">{displayScore(r.comparison.before_score)} → {displayScore(r.comparison.after_score)}</span>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
 }

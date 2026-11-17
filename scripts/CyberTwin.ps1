@@ -1,225 +1,222 @@
-﻿<#
-  CyberTwin desktop launcher.
+<#
+.SYNOPSIS
+  Starts CyberTwin as a desktop-style app: one backend process (API + built UI) and an Edge/Chrome app window.
 
-  1. Checks uv and Node.js, prepares the backend environment if needed.
-  2. Builds the frontend if dist/ is missing or older than the sources (npm runs through cmd.exe so
-     Vite's warnings on stderr cannot break Windows PowerShell 5.1).
-  3. Starts the backend (python -m cybertwin, which also serves the built frontend) on a free port.
-  4. Waits for /api/v1/health, then opens Microsoft Edge (fallback: Chrome) in --app mode with its
-     own profile under %LOCALAPPDATA%\CyberTwin.
-  5. When the window is closed, stops the backend. No uvicorn process is left behind.
+.DESCRIPTION
+  1. Builds frontend/dist if it is missing (needs Node/npm) and creates backend/.venv if missing (needs uv).
+  2. Starts uvicorn on a free 127.0.0.1 port with FRONTEND_DIST set, so the backend serves the UI itself.
+  3. Waits for /api/v1/health, then opens Edge (fallback: Chrome) with --app=<url> and its own profile under
+     %LOCALAPPDATA%\CyberTwin\browser-profile.
+  4. When that window closes, stops the backend.
+  Data (SQLite), logs and the browser profile live in %LOCALAPPDATA%\CyberTwin. AI settings come from backend\.env.
 
-  Works under Windows Smart App Control: it only runs signed executables (powershell, cmd, node,
-  the python.org venv launcher, Edge/Chrome). Errors are shown in a message box because the desktop
-  shortcut starts this script with a hidden console.
-
-  Optional: $env:CYBERTWIN_PORT = 8765 forces a port (error if it is taken).
+.PARAMETER Port
+  Fixed port instead of a free one picked by the OS. Fails with a clear message when the port is taken.
+.PARAMETER Rebuild
+  Rebuild the frontend even if frontend\dist exists.
+.PARAMETER NoBrowser
+  Start the backend only and print the URL (Enter stops it).
+.PARAMETER DebugPort
+  Adds --remote-debugging-port to the app window so an automated check can drive it (Playwright connectOverCDP).
 #>
-$ErrorActionPreference = 'Stop'
+[CmdletBinding()]
+param(
+  [int]$Port = 0,
+  [switch]$Rebuild,
+  [switch]$NoBrowser,
+  [int]$DebugPort = 0
+)
+
+$ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-$Backend = Join-Path $Root 'backend'
-$Frontend = Join-Path $Root 'frontend'
-$Dist = Join-Path $Frontend 'dist'
-$AppData = Join-Path $env:LOCALAPPDATA 'CyberTwin'
-$LogDir = Join-Path $AppData 'logs'
-$DataDir = Join-Path $AppData 'data'
-$BrowserProfile = Join-Path $AppData 'browser-profile'
-New-Item -ItemType Directory -Force $LogDir, $DataDir, $BrowserProfile | Out-Null
-$LauncherLog = Join-Path $LogDir 'launcher.log'
-$BackendLog = Join-Path $LogDir 'backend.log'
-$BackendErr = Join-Path $LogDir 'backend.err.log'
-$BuildLog = Join-Path $LogDir 'frontend-build.log'
+$Backend = Join-Path $Root "backend"
+$Frontend = Join-Path $Root "frontend"
+$Dist = Join-Path $Frontend "dist"
+$Python = Join-Path $Backend ".venv\Scripts\python.exe"
+$Home_ = Join-Path $env:LOCALAPPDATA "CyberTwin"
+$Logs = Join-Path $Home_ "logs"
+$Profile_ = Join-Path $Home_ "browser-profile"
+$StateFile = Join-Path $Home_ "backend.json"
+$BackendLog = Join-Path $Logs "backend.log"
+$BackendErr = Join-Path $Logs "backend.err.log"
+New-Item -ItemType Directory -Force -Path $Logs, $Profile_ | Out-Null
 
-function Log([string]$msg) {
-    $line = "{0:yyyy-MM-dd HH:mm:ss}  {1}" -f (Get-Date), $msg
-    Add-Content -Path $LauncherLog -Value $line -Encoding UTF8
-    Write-Host $line
+function Show-Error([string]$Message) {
+  Write-Host "CyberTwin: $Message" -ForegroundColor Red
+  if ($env:CYBERTWIN_NO_DIALOG -eq "1") { return }  # automated checks: console message only
+  try {
+    Add-Type -AssemblyName System.Windows.Forms
+    [void][System.Windows.Forms.MessageBox]::Show($Message, "CyberTwin", "OK", "Error")
+  } catch { }
 }
 
-function Fail([string]$en, [string]$tr) {
-    Log "ERROR: $en"
-    if ($env:CYBERTWIN_NO_DIALOG) { Write-Host $tr; exit 1 }   # automated tests of the error paths
-    try {
-        Add-Type -AssemblyName System.Windows.Forms
-        [void][System.Windows.Forms.MessageBox]::Show("$en`n`n$tr`n`nLog: $LauncherLog", 'CyberTwin',
-            [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-    } catch { Write-Host $tr }
-    exit 1
+function Fail([string]$Message) { Show-Error $Message; exit 1 }
+
+function Test-Command([string]$Name) { return [bool](Get-Command $Name -ErrorAction SilentlyContinue) }
+
+function Get-Listener([int]$P) {
+  # uvicorn on Windows binds with SO_REUSEADDR and does NOT fail on a taken port, so check explicitly.
+  return Get-NetTCPConnection -LocalPort $P -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 }
 
-function Find-Exe([string]$name, [string[]]$extra) {
-    $cmd = Get-Command $name -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    foreach ($p in $extra) { if ($p -and (Test-Path $p)) { return $p } }
-    return $null
+function Get-FreePort {
+  $l = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+  $l.Start(); $p = $l.LocalEndpoint.Port; $l.Stop()
+  return $p
 }
 
-function Test-PortFree([int]$port) {
-    try {
-        $l = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $port)
-        $l.Start(); $l.Stop(); return $true
-    } catch { return $false }
+function Stop-Tree([int]$ProcessId) {
+  if (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue) {
+    & taskkill.exe /PID $ProcessId /T /F 2>$null | Out-Null
+  }
 }
 
-function Port-Owner([int]$port) {
-    try {
-        $c = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction Stop | Select-Object -First 1
-        $p = Get-Process -Id $c.OwningProcess -ErrorAction SilentlyContinue
-        return "$($p.ProcessName) (PID $($c.OwningProcess))"
-    } catch { return 'unknown process' }
+function Test-Health([string]$Url) {
+  try { return (Invoke-RestMethod -Uri "$Url/api/v1/health" -TimeoutSec 2).status -eq "ok" } catch { return $false }
 }
 
-function Newest-Write([string[]]$paths) {
-    $latest = [datetime]::MinValue
-    foreach ($p in $paths) {
-        if (-not (Test-Path $p)) { continue }
-        $item = Get-Item $p
-        if ($item.PSIsContainer) {
-            $f = Get-ChildItem $p -Recurse -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-            if ($f -and $f.LastWriteTime -gt $latest) { $latest = $f.LastWriteTime }
-        } elseif ($item.LastWriteTime -gt $latest) { $latest = $item.LastWriteTime }
-    }
-    return $latest
-}
-
-Log "---- CyberTwin launcher start (root: $Root)"
-
-# ---- prerequisites --------------------------------------------------------------------------
-$uv = Find-Exe 'uv' @("$env:USERPROFILE\.local\bin\uv.exe", "$env:LOCALAPPDATA\Programs\uv\uv.exe")
-$node = Find-Exe 'node' @("$env:ProgramFiles\nodejs\node.exe")
-$python = Join-Path $Backend '.venv\Scripts\python.exe'
-if (-not (Test-Path $python)) {
-    if (-not $uv) {
-        Fail 'uv was not found. Install it: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" (see README).' `
-             'uv bulunamadı. Kurulum için README''deki "Setting up a fresh Windows PC" bölümüne bak.'
-    }
-    Log "Backend environment missing: running uv sync"
-    Push-Location $Backend
-    & cmd /c "`"$uv`" sync > `"$LogDir\uv-sync.log`" 2>&1"
-    $code = $LASTEXITCODE
-    Pop-Location
-    if ($code -ne 0 -or -not (Test-Path $python)) {
-        Fail "uv sync failed (exit $code). See $LogDir\uv-sync.log" "Backend ortamı hazırlanamadı. Günlük: $LogDir\uv-sync.log"
-    }
-}
-
-# ---- frontend build (if missing or stale) -------------------------------------------------------
-$index = Join-Path $Dist 'index.html'
-$srcTime = Newest-Write @((Join-Path $Frontend 'src'), (Join-Path $Frontend 'public'), (Join-Path $Frontend 'index.html'),
-    (Join-Path $Frontend 'package.json'), (Join-Path $Frontend 'vite.config.ts'), (Join-Path $Root 'shared\i18n'))
-$distTime = if (Test-Path $index) { (Get-Item $index).LastWriteTime } else { [datetime]::MinValue }
-if ($srcTime -gt $distTime) {
-    if (-not $node) {
-        Fail 'Node.js was not found, and the frontend must be built. Install Node.js LTS (see README).' `
-             'Node.js bulunamadı; arayüzün derlenmesi gerekiyor. Node.js LTS kur (README).'
-    }
-    Log "Frontend build needed (sources $srcTime > dist $distTime)"
-    Push-Location $Frontend
-    if (-not (Test-Path (Join-Path $Frontend 'node_modules'))) {
-        & cmd /c "npm ci > `"$BuildLog`" 2>&1"
-        if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "npm ci failed. See $BuildLog" "npm ci başarısız. Günlük: $BuildLog" }
-    }
-    & cmd /c "npm run build >> `"$BuildLog`" 2>&1"
-    $code = $LASTEXITCODE
-    Pop-Location
-    if ($code -ne 0 -or -not (Test-Path $index)) { Fail "Frontend build failed (exit $code). See $BuildLog" "Arayüz derlenemedi. Günlük: $BuildLog" }
-    Log "Frontend built"
-}
-
-# ---- port ---------------------------------------------------------------------------------------
-if ($env:CYBERTWIN_PORT) {
-    $port = [int]$env:CYBERTWIN_PORT
-    if (-not (Test-PortFree $port)) {
-        Fail "Port $port is already in use by $(Port-Owner $port). Close it or unset CYBERTWIN_PORT." `
-             "$port portu kullanımda: $(Port-Owner $port). O programı kapat ya da CYBERTWIN_PORT ayarını kaldır."
-    }
-} else {
-    $port = $null
-    foreach ($p in 8765..8799) { if (Test-PortFree $p) { $port = $p; break } }
-    if (-not $port) { Fail 'No free port between 8765 and 8799.' '8765-8799 arasında boş port yok.' }
-}
-
-# ---- backend --------------------------------------------------------------------------------------
-$db = 'sqlite+aiosqlite:///' + ((Join-Path $DataDir 'cybertwin.db') -replace '\\', '/')
-Log "Starting backend on 127.0.0.1:$port"
-$backendProc = Start-Process -FilePath $python -WorkingDirectory $Backend -WindowStyle Hidden -PassThru `
-    -ArgumentList @('-m', 'cybertwin', '--host', '127.0.0.1', '--port', "$port", '--frontend-dist', "`"$Dist`"", '--database-url', $db) `
-    -RedirectStandardOutput $BackendLog -RedirectStandardError $BackendErr
-
-$url = "http://127.0.0.1:$port"
-$healthy = $false
-for ($i = 0; $i -lt 120; $i++) {
-    if ($backendProc.HasExited) {
-        $tail = (Get-Content $BackendErr -Tail 8 -ErrorAction SilentlyContinue) -join "`n"
-        Fail "The backend stopped during start-up (exit $($backendProc.ExitCode)). Log: $BackendErr`n$tail" `
-             "Backend açılırken kapandı. Günlük: $BackendErr"
-    }
-    try {
-        $h = Invoke-RestMethod "$url/api/v1/health" -TimeoutSec 2
-        if ($h.status -eq 'ok') { $healthy = $true; break }
-    } catch { }
-    Start-Sleep -Milliseconds 500
-}
-if (-not $healthy) {
-    Stop-Process -Id $backendProc.Id -Force -ErrorAction SilentlyContinue
-    Fail "The backend did not answer on $url within 60 s. Log: $BackendErr" "Backend 60 sn içinde yanıt vermedi. Günlük: $BackendErr"
-}
-Log "Backend healthy (PID $($backendProc.Id))"
-
-# ---- app window -----------------------------------------------------------------------------------
-$browsers = @(
+function Find-Browser {
+  $candidates = @(
     "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
     "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
+    "$env:LOCALAPPDATA\Microsoft\Edge\Application\msedge.exe",
     "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
     "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
     "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
-)
-$browser = $browsers | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-if (-not $browser) {
-    Stop-Process -Id $backendProc.Id -Force -ErrorAction SilentlyContinue
-    Fail 'Neither Microsoft Edge nor Google Chrome was found.' 'Microsoft Edge ya da Google Chrome bulunamadı.'
+  )
+  foreach ($c in $candidates) { if ($c -and (Test-Path $c)) { return $c } }
+  foreach ($exe in "msedge.exe", "chrome.exe") {
+    $reg = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$exe" -ErrorAction SilentlyContinue
+    if ($reg -and $reg.'(default)' -and (Test-Path $reg.'(default)')) { return $reg.'(default)' }
+  }
+  return $null
 }
-Log "Opening $browser in app mode"
-$browserArgs = @("--app=$url/", "--user-data-dir=`"$BrowserProfile`"", '--no-first-run', '--no-default-browser-check',
-    '--window-size=1440,900', '--disable-features=Translate')
-# Verification only: lets an automated check drive the real window over CDP (off by default).
-if ($env:CYBERTWIN_CDP_PORT) { $browserArgs += "--remote-debugging-port=$($env:CYBERTWIN_CDP_PORT)" }
-$win = Start-Process -FilePath $browser -ArgumentList $browserArgs -PassThru
 
-# The app window may hand off to a child process; wait until no browser process uses our profile.
-function Profile-Procs {
-    $needle = $BrowserProfile.ToLowerInvariant()
-    Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -and $_.CommandLine.ToLowerInvariant().Contains($needle) }
+function Get-AppWindows {
+  # every Edge/Chrome process that uses our private profile (the app window and its helpers)
+  $needle = $Profile_.ToLowerInvariant()
+  return @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -and $_.CommandLine.ToLowerInvariant().Contains($needle) })
 }
-Start-Sleep -Seconds 2
-try { Wait-Process -Id $win.Id -ErrorAction SilentlyContinue } catch { }
-Log "Browser start process $($win.Id) exited; watching processes that use the app profile"
-# Edge may briefly restart its main process; only treat the window as closed after the profile
-# has had no browser process for 3 consecutive checks.
-$gone = 0
-while ($gone -lt 3) {
-    $n = @(Profile-Procs).Count
-    if ($n -gt 0) { $gone = 0 } else { $gone++ }
-    if ($backendProc.HasExited) { Log "Backend exited while the window was open (exit $($backendProc.ExitCode)); see $BackendErr"; break }
-    Start-Sleep -Seconds 1
-}
-Log "App window closed"
 
-# ---- shutdown -----------------------------------------------------------------------------------
-# The venv python.exe is a launcher that starts the real interpreter as a child process, so stop the
-# whole process tree, then sweep any remaining "python -m cybertwin --port <port>" process.
-if (-not $backendProc.HasExited) {
-    & taskkill.exe /PID $backendProc.Id /T /F 2>&1 | ForEach-Object { Log "taskkill: $_" }
+function Open-AppWindow([string]$BrowserExe, [string]$Url) {
+  $browserArgs = @(
+    "--app=$Url", "--user-data-dir=`"$Profile_`"", "--no-first-run", "--no-default-browser-check",
+    "--window-size=1440,900"
+  )
+  if ($DebugPort -gt 0) { $browserArgs += "--remote-debugging-port=$DebugPort" }
+  Start-Process -FilePath $BrowserExe -ArgumentList $browserArgs | Out-Null
 }
-Start-Sleep -Milliseconds 500
-$left = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
-    Where-Object { $_.CommandLine -and $_.CommandLine -match '-m cybertwin' -and $_.CommandLine -match "--port $port\b" })
-foreach ($p in $left) {
-    Log "Stopping leftover backend process $($p.ProcessId)"
-    Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+
+# ---- another CyberTwin already running? reuse it; a stale backend from a killed launcher is stopped
+if (Test-Path $StateFile) {
+  $state = Get-Content $StateFile -Raw | ConvertFrom-Json
+  $alive = Get-Process -Id $state.launcher -ErrorAction SilentlyContinue
+  if ($alive -and (Test-Health $state.url)) {
+    $browser = Find-Browser
+    if ($browser) { Open-AppWindow $browser $state.url } else { Start-Process $state.url }
+    exit 0
+  }
+  if ($state.backend) { Stop-Tree ([int]$state.backend) }
+  Remove-Item $StateFile -Force -ErrorAction SilentlyContinue
 }
-$still = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
-    Where-Object { $_.CommandLine -and $_.CommandLine -match '-m cybertwin' -and $_.CommandLine -match "--port $port\b" })
-Log "Backend stopped (remaining backend processes: $($still.Count)); launcher done"
-exit 0
+
+# ---- prerequisites (only the tools that are actually needed are required)
+if (-not (Test-Path $Python)) {
+  if (-not (Test-Command "uv")) {
+    Fail "backend\.venv is missing and 'uv' was not found on PATH. Install uv (https://docs.astral.sh/uv/), then run 'uv sync' in $Backend."
+  }
+  Write-Host "Creating backend\.venv (uv sync)..."
+  Push-Location $Backend
+  try { & uv sync --frozen *> (Join-Path $Logs "uv-sync.log") } finally { Pop-Location }
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path $Python)) { Fail "uv sync failed. Log: $(Join-Path $Logs 'uv-sync.log')" }
+}
+
+function Test-DistStale {
+  # dist older than any frontend source (src, public, index.html, package files) -> rebuild
+  $built = Get-Item (Join-Path $Dist "index.html") -ErrorAction SilentlyContinue
+  if (-not $built) { return $true }
+  $sources = @(Get-ChildItem (Join-Path $Frontend "src"), (Join-Path $Frontend "public") -Recurse -File -ErrorAction SilentlyContinue) +
+    @(Get-Item (Join-Path $Frontend "index.html"), (Join-Path $Frontend "package.json"), (Join-Path $Frontend "vite.config.ts") -ErrorAction SilentlyContinue)
+  $newest = ($sources | Measure-Object -Property LastWriteTime -Maximum).Maximum
+  return $newest -gt $built.LastWriteTime
+}
+
+$missing = -not (Test-Path (Join-Path $Dist "index.html"))
+if ($Rebuild -or $missing -or (Test-DistStale)) {
+  if (-not $missing -and -not $Rebuild -and -not (Test-Command "npm")) {
+    Write-Host "frontend\dist is older than the sources, but npm was not found; using the existing build." -ForegroundColor Yellow
+  } elseif (-not (Test-Command "npm")) {
+    Fail "frontend\dist is missing and Node.js/npm was not found on PATH. Install Node 24 (https://nodejs.org/), or build the frontend once with 'npm install' and 'npm run build' in $Frontend."
+  } else {
+    $buildLog = Join-Path $Logs "frontend-build.log"
+    Write-Host "Building the frontend... log: $buildLog"
+    Push-Location $Frontend
+    $ok = $true
+    try {
+      # through cmd.exe: npm/vite write warnings to stderr, and Windows PowerShell 5.1 turns native stderr into a
+      # terminating NativeCommandError under $ErrorActionPreference = "Stop" (the launcher then died mid-build)
+      if (-not (Test-Path (Join-Path $Frontend "node_modules"))) { & cmd.exe /d /c "npm ci > `"$buildLog`" 2>&1"; $ok = ($LASTEXITCODE -eq 0) }
+      if ($ok) { & cmd.exe /d /c "npm run build >> `"$buildLog`" 2>&1"; $ok = ($LASTEXITCODE -eq 0) }
+    } finally { Pop-Location }
+    if (-not $ok -or -not (Test-Path (Join-Path $Dist "index.html"))) { Fail "Frontend build failed. Log: $buildLog" }
+  }
+}
+
+# ---- port
+if ($Port -gt 0) {
+  $owner = Get-Listener $Port
+  if ($owner) {
+    $p = Get-Process -Id $owner.OwningProcess -ErrorAction SilentlyContinue
+    Fail "Port $Port is already in use by $($p.ProcessName) (PID $($owner.OwningProcess)). Close it or start without -Port to use a free port."
+  }
+} else {
+  $Port = Get-FreePort
+}
+$Url = "http://127.0.0.1:$Port"
+
+# ---- backend: one process serves /api and the UI
+$env:FRONTEND_DIST = $Dist
+$env:DATABASE_URL = "sqlite+aiosqlite:///" + ((Join-Path $Home_ "cybertwin.db") -replace "\\", "/")
+$env:CORS_ORIGINS = $Url
+$env:LOG_LEVEL = "INFO"
+$uvicornArgs = @("-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "$Port", "--app-dir", "`"$Backend`"")
+$proc = Start-Process -FilePath $Python -ArgumentList $uvicornArgs -WorkingDirectory $Backend -WindowStyle Hidden `
+  -RedirectStandardOutput $BackendLog -RedirectStandardError $BackendErr -PassThru
+$null = $proc.Handle  # Windows PowerShell 5.1: keep the handle so ExitCode is readable after the process ends
+@{ launcher = $PID; backend = $proc.Id; url = $Url } | ConvertTo-Json | Set-Content -Path $StateFile -Encoding UTF8
+
+try {
+  $deadline = (Get-Date).AddSeconds(90)
+  while (-not (Test-Health $Url)) {
+    if ($proc.HasExited) {
+      $tail = (Get-Content $BackendErr -Tail 15 -ErrorAction SilentlyContinue) -join "`n"
+      Fail "The backend stopped during start (exit code $($proc.ExitCode)).`nLog: $BackendErr`n`n$tail"
+    }
+    if ((Get-Date) -gt $deadline) { Fail "The backend did not answer on $Url within 90 s. Log: $BackendErr" }
+    Start-Sleep -Milliseconds 400
+  }
+  Write-Host "CyberTwin is running at $Url (log: $BackendErr)"
+
+  if ($NoBrowser) {
+    Read-Host "Press Enter to stop CyberTwin" | Out-Null
+  } else {
+    $browser = Find-Browser
+    if (-not $browser) {
+      Show-Error "Neither Microsoft Edge nor Google Chrome was found. CyberTwin opens in your default browser instead; close this window to stop it."
+      Start-Process $Url
+      Read-Host "Press Enter to stop CyberTwin" | Out-Null
+    } else {
+      Open-AppWindow $browser $Url
+      # the window may need a moment to appear; then wait until every process of our profile is gone
+      $seen = $false
+      for ($i = 0; $i -lt 40 -and -not $seen; $i++) { Start-Sleep -Milliseconds 250; $seen = (Get-AppWindows).Count -gt 0 }
+      if (-not $seen) { Fail "The browser window did not start ($browser)." }
+      while ((Get-AppWindows).Count -gt 0) { Start-Sleep -Milliseconds 1500 }
+    }
+  }
+} finally {
+  Stop-Tree $proc.Id
+  Remove-Item $StateFile -Force -ErrorAction SilentlyContinue
+  Remove-Item Env:FRONTEND_DIST, Env:DATABASE_URL, Env:CORS_ORIGINS, Env:LOG_LEVEL -ErrorAction SilentlyContinue
+}

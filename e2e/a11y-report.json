@@ -1,0 +1,266 @@
+{
+  "en:overview": [],
+  "en:overview:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 48,
+      "targets": []
+    }
+  ],
+  "en:network-map": [],
+  "en:network-map:incomplete": [
+    {
+      "id": "aria-prohibited-attr",
+      "impact": "serious",
+      "nodes": 1,
+      "targets": [
+        ".react-flow__controls"
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 50,
+      "targets": []
+    }
+  ],
+  "en:assets": [],
+  "en:assets:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "en:attack-simulation": [],
+  "en:attack-simulation:incomplete": [
+    {
+      "id": "aria-prohibited-attr",
+      "impact": "serious",
+      "nodes": 1,
+      "targets": [
+        ".react-flow__panel"
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 153,
+      "targets": []
+    }
+  ],
+  "en:vulnerabilities": [],
+  "en:vulnerabilities:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "en:ai-assistant": [],
+  "en:ai-assistant:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "en:remediation": [],
+  "en:remediation:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "en:reports": [],
+  "en:reports:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "tr:overview": [],
+  "tr:overview:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 48,
+      "targets": []
+    }
+  ],
+  "tr:network-map": [],
+  "tr:network-map:incomplete": [
+    {
+      "id": "aria-prohibited-attr",
+      "impact": "serious",
+      "nodes": 1,
+      "targets": [
+        ".react-flow__controls"
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 50,
+      "targets": []
+    }
+  ],
+  "tr:assets": [],
+  "tr:assets:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "tr:attack-simulation": [],
+  "tr:attack-simulation:incomplete": [
+    {
+      "id": "aria-prohibited-attr",
+      "impact": "serious",
+      "nodes": 1,
+      "targets": [
+        ".react-flow__panel"
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 156,
+      "targets": []
+    }
+  ],
+  "tr:vulnerabilities": [],
+  "tr:vulnerabilities:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "tr:ai-assistant": [],
+  "tr:ai-assistant:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "tr:remediation": [],
+  "tr:remediation:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "tr:reports": [],
+  "tr:reports:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "az:overview": [],
+  "az:overview:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 48,
+      "targets": []
+    }
+  ],
+  "az:network-map": [],
+  "az:network-map:incomplete": [
+    {
+      "id": "aria-prohibited-attr",
+      "impact": "serious",
+      "nodes": 1,
+      "targets": [
+        ".react-flow__controls"
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 50,
+      "targets": []
+    }
+  ],
+  "az:assets": [],
+  "az:assets:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "az:attack-simulation": [],
+  "az:attack-simulation:incomplete": [
+    {
+      "id": "aria-prohibited-attr",
+      "impact": "serious",
+      "nodes": 1,
+      "targets": [
+        ".react-flow__panel"
+      ]
+    },
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 157,
+      "targets": []
+    }
+  ],
+  "az:vulnerabilities": [],
+  "az:vulnerabilities:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "az:ai-assistant": [],
+  "az:ai-assistant:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "az:remediation": [],
+  "az:remediation:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ],
+  "az:reports": [],
+  "az:reports:incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "nodes": 18,
+      "targets": []
+    }
+  ]
+}

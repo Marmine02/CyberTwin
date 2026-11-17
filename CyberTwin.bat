@@ -1,4 +1,4 @@
 @echo off
-rem CyberTwin desktop launcher: builds the frontend if needed, starts the backend, opens the app window
-rem and stops the backend when the window is closed. See scripts\CyberTwin.ps1.
+rem Updated: 2026-11-17
+rem Double-click to start CyberTwin as a desktop app (see scripts\CyberTwin.ps1).
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\CyberTwin.ps1" %*

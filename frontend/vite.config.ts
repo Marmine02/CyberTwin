@@ -1,22 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
-const backend = process.env.CYBERTWIN_BACKEND ?? 'http://127.0.0.1:8765'
+const backend = process.env.CT_BACKEND_URL ?? "http://127.0.0.1:8000";
+const port = Number(process.env.CT_FRONTEND_PORT ?? 5173);
+// `vite preview` (used by the E2E suite) must proxy /api exactly like the dev server does
+const proxy = { "/api": { target: backend, changeOrigin: false } };
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 5173,
+    port,
     strictPort: true,
-    // shared/i18n lives one level above the frontend root
-    fs: { allow: ['..'] },
-    proxy: { '/api': { target: backend, changeOrigin: false } },
+    proxy,
   },
-  preview: {
-    port: 4173,
-    strictPort: true,
-    proxy: { '/api': { target: backend, changeOrigin: false } },
-  },
-  build: { outDir: 'dist', sourcemap: false, chunkSizeWarningLimit: 1500 },
-})
+  preview: { port, strictPort: true, proxy },
+  build: { sourcemap: false, chunkSizeWarningLimit: 900 },
+});

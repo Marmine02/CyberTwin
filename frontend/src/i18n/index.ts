@@ -1,52 +1,48 @@
-import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
-import en from '../../../shared/i18n/en.json'
-import tr from '../../../shared/i18n/tr.json'
-import az from '../../../shared/i18n/az.json'
-import uiEn from '../../../shared/i18n/ui.en.json'
-import uiTr from '../../../shared/i18n/ui.tr.json'
-import uiAz from '../../../shared/i18n/ui.az.json'
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import en, { type Resources } from "./en";
+import tr from "./tr";
+import az from "./az";
 
-export const LANGS = ['en', 'tr', 'az'] as const
-export type Lang = (typeof LANGS)[number]
+export const LANGUAGES = ["en", "tr", "az"] as const;
+export type Lang = (typeof LANGUAGES)[number];
 
-export const resources = {
-  en: { translation: { ...en, ui: uiEn } },
-  tr: { translation: { ...tr, ui: uiTr } },
-  az: { translation: { ...az, ui: uiAz } },
-} as const
-
-const STORAGE_KEY = 'cybertwin.lang'
-
-export function storedLang(): Lang {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY)
-    if (v && (LANGS as readonly string[]).includes(v)) return v as Lang
-  } catch {
-    /* storage unavailable: fall through to default */
+declare module "i18next" {
+  interface CustomTypeOptions {
+    defaultNS: "translation";
+    resources: { translation: Resources };
   }
-  return 'en'
 }
 
-export function persistLang(lang: Lang): void {
+const LS = "cybertwin.lang";
+function initial(): Lang {
   try {
-    localStorage.setItem(STORAGE_KEY, lang)
+    const saved = localStorage.getItem(LS);
+    if ((LANGUAGES as readonly string[]).includes(saved ?? "")) return saved as Lang;
   } catch {
     /* ignore */
   }
+  const nav = navigator.language?.toLowerCase() ?? "";
+  return nav.startsWith("tr") ? "tr" : nav.startsWith("az") ? "az" : "en";
 }
 
 void i18n.use(initReactI18next).init({
-  resources,
-  lng: storedLang(),
-  fallbackLng: 'en',
+  resources: { en: { translation: en }, tr: { translation: tr }, az: { translation: az } },
+  lng: initial(),
+  fallbackLng: "en",
   interpolation: { escapeValue: false },
   returnNull: false,
-})
+  react: { bindI18nStore: "added" },
+});
 
-i18n.on('languageChanged', (lng) => {
-  document.documentElement.lang = lng
-})
-document.documentElement.lang = i18n.language
+i18n.on("languageChanged", (lng) => {
+  document.documentElement.lang = lng;
+  try {
+    localStorage.setItem(LS, lng);
+  } catch {
+    /* ignore */
+  }
+});
+document.documentElement.lang = i18n.language;
 
-export default i18n
+export default i18n;
