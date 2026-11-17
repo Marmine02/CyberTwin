@@ -1,16 +1,20 @@
 # PROGRESS
 
 ## Done
-- Phase 1: `git init -b main`, `.gitignore`, `.gitattributes`, `CLAUDE.md`, `docs/SPEC.md`, `PROGRESS.md`.
+- Phase 1: repo, `.gitignore`/`.gitattributes`, `CLAUDE.md`, `docs/SPEC.md`, repo-local git identity
+  (Marmine02 noreply), private repo github.com/Marmine02/CyberTwin, uv + python.org Python 3.12.10
+  (Smart App Control workarounds: see docs/KNOWN_GAPS.md), backend (FastAPI/SQLAlchemy/NetworkX) and
+  frontend (Vite 8/React 19/TS 6.0/Tailwind 4) scaffolds, `scripts/check.ps1`.
 
 ## In progress
-- Phase 1: repo-local git identity, private GitHub repo, tooling (uv + Python 3.12).
+- (none)
 
 ## Next
 - Phase 2: data model + DB + migrations.
 
 ## Open questions / blockers
-- `docs/design/` reference images are missing (folder was empty at start). Needed before Phase 7.
+- `docs/design/` reference images are missing. Owner will add them before Phase 7.
 
 ## How to verify
-- `git log --oneline` shows the bootstrap commits.
+- `powershell -ExecutionPolicy Bypass -File scripts\check.ps1` → ALL GREEN.
+- Backend tools always via `uv run python -m <tool>` (exe trampolines are blocked by SAC).
