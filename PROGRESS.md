@@ -6,11 +6,15 @@
   (Smart App Control workarounds: see docs/KNOWN_GAPS.md), backend (FastAPI/SQLAlchemy/NetworkX) and
   frontend (Vite 8/React 19/TS 6.0/Tailwind 4) scaffolds, `scripts/check.ps1`.
 
+- Phase 2: domain model (`backend/src/cybertwin/domain`: immutable TwinContent snapshot per revision,
+  integrity checks, canonical JSON + hash, diff), SQLAlchemy tables + Alembic `0001_initial`,
+  repository layer, Northwind seed (`seed/northwind.py`). 19 tests on real temp SQLite + migrations.
+
 ## In progress
-- (none)
+- Phase 3: simulation engine (`backend/src/cybertwin/engine`).
 
 ## Next
-- Phase 2: data model + DB + migrations.
+- Phase 4: remediation engine.
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.
