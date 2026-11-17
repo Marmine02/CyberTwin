@@ -188,8 +188,15 @@ export function Attack() {
   }, [playing, pos, frames.length, speed, finished])
 
   useEffect(() => {
-    const el = logRef.current?.querySelector('[aria-current="step"]')
-    el?.scrollIntoView({ block: 'nearest' })
+    // Scroll only the log's own container (scrollIntoView would also scroll the page).
+    const list = logRef.current
+    const box = list?.parentElement
+    const el = list?.querySelector<HTMLElement>('[aria-current="step"]')
+    if (!box || !el) return
+    const top = el.offsetTop - list.offsetTop
+    if (top < box.scrollTop || top + el.offsetHeight > box.scrollTop + box.clientHeight) {
+      box.scrollTop = Math.max(0, top - box.clientHeight / 2)
+    }
   }, [pos])
 
   const start = () => {

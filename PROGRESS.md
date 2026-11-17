@@ -30,12 +30,16 @@
   (TopBar, IconRail, menus), neon map (`components/map`), Overview page. Checkpoint images in
   `docs/screenshots/checkpoint-*.png` (real backend + Edge).
 
+- Visual checkpoint approved by the owner (2026-11-17).
+- Phase 8: all 8 pages (`frontend/src/pages`), guided demo (`components/GuidedTour.tsx`), toasts,
+  dialogs, forms with validation, replay (`lib/replay.ts`). First E2E specs (demo flow, no-path)
+  green against real backend + vite preview + Edge (`frontend/playwright.config.ts`).
+
 ## In progress
-- **VISUAL CHECKPOINT: waiting for the owner's approval** before building the other pages.
+- Phase 9: desktop app mode (CyberTwin.bat -> scripts/CyberTwin.ps1, install-shortcut.ps1, icon).
 
 ## Next
-- Phase 8: pages (Network map, Assets, Attack simulation, Vulnerabilities, AI assistant,
-  Remediation, Reports) + guided demo.
+- Phase 10: full E2E + visual QA; Phase 11: docs + final report.
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.

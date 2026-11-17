@@ -76,9 +76,9 @@ function SeverityPanel({ run }: { run: Run }) {
           </div>
         ))}
       </div>
-      <div className="flex min-h-[70px] flex-1 items-end gap-2" aria-hidden="true">
+      <div className="grid min-h-[70px] flex-1 grid-cols-4 gap-2" aria-hidden="true">
         {SEVERITIES.map((s) => (
-          <div key={s} className="flex h-full flex-1 items-end rounded-full bg-cyan/6">
+          <div key={s} className="mx-auto flex h-full w-3.5 items-end rounded-full bg-cyan/8">
             <div className="w-full origin-bottom rounded-full transition-transform duration-700"
               style={{ height: '100%', transform: `scaleY(${counts[s] / max})`, background: `linear-gradient(180deg, ${SEV_BAR[s]}, #c084fc)`, boxShadow: `0 0 14px ${SEV_BAR[s]}88` }} />
           </div>
