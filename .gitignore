@@ -38,3 +38,7 @@ blob-report/
 Thumbs.db
 .idea/
 .vscode/
+
+# PowerShell module cache written when USERPROFILE is redirected during launcher tests
+Microsoft/
+
