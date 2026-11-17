@@ -1,4 +1,4 @@
-"""Routers that are assembled from later modules (AI, reports, i18n)."""
+"""Routers assembled from the AI, reports and i18n modules."""
 
 from __future__ import annotations
 
@@ -6,4 +6,6 @@ from fastapi import APIRouter
 
 
 def routers() -> list[APIRouter]:
-    return []
+    from cybertwin.api.routes import ai
+
+    return [ai.router]

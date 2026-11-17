@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from cybertwin import __version__
+from cybertwin.ai.providers import make_provider
 from cybertwin.api.errors import envelope, install_error_handlers
 from cybertwin.api.routes import simulation, system, twins
 from cybertwin.config import Settings, get_settings
@@ -46,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
     app.state.settings = settings
+    app.state.ai_provider = make_provider(settings)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

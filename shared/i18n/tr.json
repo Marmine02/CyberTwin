@@ -1,0 +1,254 @@
+{
+  "scenario": {
+    "sensitive_data_exposure": {"name": "Hassas Veri İfşası", "desc": "İnternetteki bir saldırgan, veri hassasiyeti yüksek varlıklardaki verileri okumaya çalışır."},
+    "credential_compromise": {"name": "Kimlik Bilgisi Ele Geçirme", "desc": "İnternetteki bir saldırgan, hesap kimlik bilgilerini ve domain admin yetkisini ele geçirmeye çalışır."},
+    "lateral_movement": {"name": "Yanal Hareket", "desc": "Seçilen başlangıç noktasından saldırgan, diğer kritik varlıklarda admin olmaya çalışır."},
+    "privilege_escalation": {"name": "Yetki Yükseltme", "desc": "Seçilen başlangıç noktasından saldırgan önce yerel admin, sonra domain admin olmaya çalışır."},
+    "outdated_service_exploitation": {"name": "Eski Servis İstismarı", "desc": "İnternetteki bir saldırgan, desteği bitmiş yazılım çalıştıran varlıkları hedefler."}
+  },
+  "technique": {
+    "network_reach": "Ağ erişimi",
+    "remote_exploit": "Uzaktan istismar",
+    "brute_force": "Parola tahmini",
+    "local_privesc": "Yerel yetki yükseltme",
+    "credential_theft": "Kimlik bilgisi hırsızlığı",
+    "kerberoasting": "Kerberoasting",
+    "credential_use": "Geçerli hesap kullanımı",
+    "trust_abuse": "Güven ilişkisi istismarı",
+    "data_access": "Veri erişimi",
+    "domain_takeover": "Domain ele geçirme",
+    "privilege_implied": "Kapsanan yetki"
+  },
+  "step": {
+    "network_reach": "{{src}} üzerinden {{asset}} varlığının {{port}} portuna ({{service}}) eriş",
+    "network_reach_via": "{{src}} üzerinden, {{via}} geçerek {{asset}} varlığının {{port}} portuna ({{service}}) eriş",
+    "remote_exploit": "{{asset}} üzerindeki {{port}} portunda {{cve}} ({{title}}) açığını istismar et ve {{grants}} erişimi kazan",
+    "brute_force": "{{asset}} üzerinde {{service}} ile {{principal}} hesabının {{strength}} parolasını tahmin et",
+    "brute_force_local": "{{asset}} üzerinde {{service}} ile yerel bir hesabın parolasını tahmin et ({{strength}} politika)",
+    "local_privesc": "{{cve}} ({{title}}) ile {{asset}} üzerinde admin yetkisine yüksel",
+    "credential_theft": "{{asset}} üzerinde önbellekteki {{principal}} kimlik bilgilerini çek",
+    "kerberoasting": "{{asset}} üzerinden {{principal}} için servis bileti iste ve {{strength}} parolasını çevrimdışı kır",
+    "credential_use": "{{principal}} olarak {{level}} yetkisiyle {{asset}} varlığına oturum aç",
+    "credential_use_domain": "{{principal}} hesabının domain admin kimlik bilgilerini {{asset}} üzerinde kullan",
+    "trust_abuse": "{{asset}} varlığının {{src}} varlığına duyduğu güveni istismar et",
+    "data_access": "{{asset}} üzerindeki hassas verileri {{level}} yetkisiyle oku",
+    "domain_takeover": "{{asset}} üzerinden kimlik domain'ini ele geçir",
+    "privilege_implied": "{{asset}} üzerindeki admin yetkisi kullanıcı erişimini de kapsar"
+  },
+  "finding": {
+    "vulnerability": "{{asset}} üzerinde {{cve}} (CVSS {{cvss}}, örnek amaçlı)",
+    "exposed_service": "{{asset}} üzerindeki {{service}} portu {{port}} internete açık (kural {{rule}})",
+    "flat_network": "{{rule}} kuralı {{src}} bölgesinden {{dst}} bölgesine tüm trafiğe izin veriyor",
+    "weak_credential": "{{principal}} hesabının parolası {{strength}}",
+    "no_mfa": "{{principal}} ({{privilege}}) MFA olmadan oturum açıyor",
+    "kerberoastable": "{{principal}} Kerberoasting'e açık ({{strength}} parola)",
+    "excessive_privilege": "{{principal}} servis hesabının {{asset}} üzerinde {{level}} yetkisi var",
+    "cached_credential": "{{principal}} ({{privilege}}) kimlik bilgileri {{asset}} üzerinde önbellekte",
+    "eol_software": "{{asset}} üzerindeki {{software}} {{version}} desteği bitmiş bir sürüm",
+    "weak_password_policy": "{{asset}} üzerindeki yerel parola politikası {{strength}}",
+    "no_edr": "{{asset}} (kritiklik {{criticality}}) üzerinde EDR yok",
+    "trust_relationship": "{{target}}, {{source}} varlığına güveniyor"
+  },
+  "findingKind": {
+    "vulnerability": "Zafiyet",
+    "exposed_service": "Açık servis",
+    "flat_network": "Düz ağ",
+    "weak_credential": "Zayıf kimlik bilgisi",
+    "no_mfa": "MFA yok",
+    "kerberoastable": "Kerberoasting'e açık hesap",
+    "excessive_privilege": "Aşırı yetki",
+    "cached_credential": "Önbellekteki kimlik bilgisi",
+    "eol_software": "Desteği bitmiş yazılım",
+    "weak_password_policy": "Zayıf parola politikası",
+    "no_edr": "EDR yok",
+    "trust_relationship": "Güven ilişkisi"
+  },
+  "action": {
+    "restrict_port": "{{asset}} üzerindeki {{port}} portunu yönetim bölgesiyle sınırla",
+    "enforce_mfa": "{{principal}} için MFA zorunlu kıl",
+    "set_password_policy_principal": "{{principal}} için {{strength}} parola zorunlu kıl",
+    "set_password_policy_asset": "{{asset}} üzerinde {{strength}} yerel parola politikası uygula",
+    "apply_patch": "{{asset}} üzerindeki {{cve}} açığını yamala",
+    "reduce_permission": "{{principal}} hesabının {{asset}} üzerindeki yetkisini {{level}} seviyesine indir",
+    "segment_zones": "{{a}} ve {{b}} bölgelerini segmentlere ayır"
+  },
+  "actionType": {
+    "restrict_port": "Port kısıtla",
+    "enforce_mfa": "MFA zorunlu kıl",
+    "set_password_policy": "Parola politikası",
+    "apply_patch": "Yama uygula",
+    "reduce_permission": "Yetki azalt",
+    "segment_zones": "Bölgeleri ayır"
+  },
+  "goal": {
+    "data": "{{asset}} üzerindeki hassas veri",
+    "credential": "{{principal}} kimlik bilgileri",
+    "privilege": "{{asset}} üzerinde admin",
+    "privilege_user": "{{asset}} üzerinde dayanak noktası",
+    "domain": "Domain admin"
+  },
+  "severity": {"critical": "Kritik", "high": "Yüksek", "medium": "Orta", "low": "Düşük"},
+  "level": {"user": "kullanıcı", "admin": "admin", "domain_admin": "domain admin", "none": "erişimsiz"},
+  "strength": {"weak": "zayıf", "medium": "orta güçte", "strong": "güçlü"},
+  "privilege": {"user": "kullanıcı", "admin": "admin", "domain_admin": "domain admin"},
+  "zone": {"internet": "İnternet", "dmz": "DMZ", "internal": "İç ağ", "data": "Veri", "mgmt": "Yönetim"},
+  "assetType": {
+    "internet_gateway": "İnternet", "firewall": "Güvenlik duvarı", "web_server": "Web sunucusu", "app_server": "Uygulama sunucusu",
+    "db_server": "Veritabanı sunucusu", "identity_server": "Kimlik sunucusu", "employee_ws": "Çalışan bilgisayarı",
+    "admin_ws": "Yönetici bilgisayarı"
+  },
+  "list": {"and": "ve"},
+  "ai": {
+    "section": {
+      "summary": "Özet",
+      "key_risks": "Başlıca riskler",
+      "attack_steps": "Saldırı adımları (motor)",
+      "remediation_plan": "Düzeltme planı",
+      "residual": "Artık maruziyet"
+    },
+    "summary": "r{{revision}} revizyonunda {{scenario}}: güvenlik puanı 100 üzerinden {{score}}, ihlal olasılığı {{p_breach}}.",
+    "summary_paths_one": "Motor {{count}} saldırı yolu buldu; en olası yol {{likelihood}} olasılıkla {{goal}} hedefine ulaşıyor.",
+    "summary_paths_other": "Motor {{count}} saldırı yolu buldu; en olası yol {{likelihood}} olasılıkla {{goal}} hedefine ulaşıyor.",
+    "summary_no_path": "Motor {{entry}} noktasından hiçbir hedefe giden yol bulmadı; bu yüzden puan 100.",
+    "summary_compromised": "Sunucuların {{pct}} kadarı {{entry}} noktasından ele geçirilebilir.",
+    "risk_item": "{{path}}, {{likelihood}} olasılıkla {{goal}} hedefine ulaşıyor (risk {{risk}}): {{route}}.",
+    "risk_because": "Bunu mümkün kılanlar: {{reasons}}.",
+    "plan_item": "{{action}}: {{delta}} puan, sonrasında puan {{after}}.",
+    "plan_item_hardening": "{{action}}: yukarıdaki adımlardan sonra ek kazanç yok (tek başına: {{standalone}} puan).",
+    "plan_empty": "Bu senaryo için düzeltilecek bir şey yok: hiçbir yol bir hedefe ulaşmıyor.",
+    "residual_one": "{{count}} bulgu modelde duruyor ama ulaşılabilir hiçbir yol onu kullanmıyor: {{items}}.",
+    "residual_other": "{{count}} bulgu modelde duruyor ama ulaşılabilir hiçbir yol bunları kullanmıyor: {{items}}.",
+    "residual_none": "Modeldeki her bulgu ulaşılabilir bir yol tarafından kullanılıyor.",
+    "residual_more_one": "ve {{count}} tane daha",
+    "residual_more_other": "ve {{count}} tane daha",
+    "mode": {"llm": "LLM", "template": "Şablon"},
+    "chat": {
+      "intro": "Bu ikizin motor sonuçlarına dayanarak yanıt veririm. Birincil yolu, puanı, bir düzeltmeyi, artık maruziyeti ya da kimliğiyle bir varlığı sorabilirsin.",
+      "score": "r{{revision}} revizyonunda {{scenario}} puanı {{score}} (ihlal olasılığı {{p_breach}}).",
+      "path": "Birincil yol {{path}}, {{likelihood}} olasılıklı: {{route}}.",
+      "steps": "Adımlar: {{steps}}.",
+      "fix": "Sıradaki en iyi düzeltme: {{action}} ({{delta}} puan, puan {{after}}).",
+      "fix_none": "Düzeltme gerekmiyor: hiçbir yol bir hedefe ulaşmıyor.",
+      "residual": "Artık maruziyet: {{items}}.",
+      "asset": "{{asset}} ({{type}}, {{zone}} bölgesi): risk {{risk}}, kritiklik {{criticality}}.",
+      "asset_paths_one": "{{count}} yolda geçiyor: {{paths}}.",
+      "asset_paths_other": "{{count}} yolda geçiyor: {{paths}}.",
+      "asset_paths_none": "Şu anki hiçbir yol bu varlıktan geçmiyor.",
+      "asset_findings": "Bulgular: {{items}}.",
+      "no_run": "Bu ikiz için henüz simülasyon çalıştırılmadı. Önce bir senaryo çalıştır.",
+      "unknown": "Yalnızca motor sonuçlarından yanıt verebilirim. Şunları dene: \"P1 neden mümkün\", \"önce neyi düzeltmeliyim\", \"puan\", \"artık\" ya da web-01 gibi bir varlık kimliği."
+    }
+  },
+  "check": {
+    "unknown_placeholder": "Bilinmeyen yer tutucu {{placeholder}}",
+    "literal_number": "{{value}} sayısı motordaki hiçbir değerle eşleşmiyor",
+    "wrong_path_step": "{{step}} adımı {{path}} altında anılıyor ama başka bir yola ait",
+    "unknown_id": "Bilinmeyen kimlik {{id}}",
+    "remediation_order": "Düzeltme sırası motorun puan farkı sırasından farklı",
+    "invalid_output": "Model çıktısı şemaya uymadı"
+  },
+  "report": {
+    "title": "CyberTwin simülasyon raporu",
+    "badge": "Yalnızca simülasyon - sanal model, hiçbir gerçek sisteme dokunulmadı",
+    "twin": "İkiz",
+    "revision": "Revizyon",
+    "scenario": "Senaryo",
+    "generated": "Oluşturulma",
+    "run": "Çalıştırma",
+    "score": "Güvenlik puanı",
+    "p_breach": "İhlal olasılığı",
+    "compromised": "Ele geçirilen sunucular",
+    "goals": "Hedefler",
+    "goal": "Hedef",
+    "likelihood": "Olasılık",
+    "risk": "Risk",
+    "impact": "Etki",
+    "paths": "Saldırı yolları",
+    "path": "Yol",
+    "step": "Adım",
+    "technique": "Teknik",
+    "probability": "p",
+    "attack": "ATT&CK",
+    "findings": "Bulgular",
+    "severity": "Önem",
+    "finding": "Bulgu",
+    "used_by": "Kullanan",
+    "recommendations": "Öneriler",
+    "rank": "#",
+    "action": "Aksiyon",
+    "delta": "Puan farkı",
+    "after": "Sonraki puan",
+    "residual": "Artık maruziyet",
+    "none": "Yok",
+    "hash": "Sonuç özeti (hash)",
+    "illustrative": "CVE referansları örnek amaçlıdır.",
+    "no_path": "Bu revizyonda hiçbir saldırı yolu bir hedefe ulaşmıyor."
+  },
+  "event": {
+    "demo_reset": "Demo sıfırlandı: {{twin}} geri yüklendi",
+    "run_completed": "r{{revision}} üzerinde simülasyon bitti: puan {{score}}",
+    "remediation_applied": "{{count}} düzeltme uygulandı, r{{revision}} oluşturuldu: {{score_before}} → {{score_after}}",
+    "remediation_reverted": "Düzeltme r{{revision}} ile geri alındı: puan {{score}}",
+    "revision_edit": "Model düzenlendi: r{{revision}} ({{entity}} {{id}})",
+    "revision_revert": "Revizyon r{{revision}} olarak geri yüklendi",
+    "revision_remediation": "Düzeltme revizyonu r{{revision}}"
+  },
+  "revision": {
+    "seed": "İlk model",
+    "create": "{{entity}} oluşturuldu: {{id}}",
+    "update": "{{entity}} güncellendi: {{id}}",
+    "delete": "{{entity}} silindi: {{id}}",
+    "remediation_one": "{{count}} düzeltme uygulandı",
+    "remediation_other": "{{count}} düzeltme uygulandı",
+    "revert": "#{{remediation_id}} düzeltmesi geri alındı (r{{from}} durumuna dönüldü)",
+    "restore": "r{{from}} geri yüklendi"
+  },
+  "entity": {
+    "asset": "varlık", "connection": "bağlantı", "principal": "hesap", "firewall_rule": "güvenlik duvarı kuralı",
+    "vulnerability": "zafiyet"
+  },
+  "no_path": {
+    "unreachable": "Bu revizyonda {{entry}} noktasından çıkan hiçbir saldırı yolu bir hedefe ulaşmıyor."
+  },
+  "northwind": {
+    "description": "Kurgusal lojistik şirketi: herkese açık web sunucusu, kimlik sunucusu, müşteri veritabanı ve çalışan bilgisayarları."
+  },
+  "error": {
+    "not_found": "Bulunamadı: {{entity}} {{id}}",
+    "internal": "Sunucuda beklenmeyen bir hata oluştu ({{type}}). Ayrıntılar backend günlüğünde.",
+    "http_error": "İstek {{status}} durum koduyla başarısız oldu",
+    "network": "CyberTwin backend'ine ulaşılamıyor. Çalışıyor mu?",
+    "validation": {
+      "request": "{{field}} için geçersiz değer: {{reason}}",
+      "integrity": "Bu değişiklik modeli tutarsız hale getirir.",
+      "id_immutable": "{{id}} kimliği değiştirilemez."
+    },
+    "conflict": {"duplicate_id": "{{id}} kimliğiyle bir {{entity}} zaten var."},
+    "revision": {"no_change": "Hiçbir şey değişmedi: model mevcut revizyonla aynı."},
+    "compare": {"same_revision": "Karşılaştırmak için iki farklı revizyon seç."},
+    "scenario": {
+      "unknown": "Bilinmeyen senaryo: {{scenario}}.",
+      "unknown_param": "Senaryo {{param}} parametresini kabul etmiyor.",
+      "invalid_foothold": "{{foothold}} başlangıç noktası olamaz: bir sunucu seç (güvenlik duvarı ya da internet olmaz).",
+      "foothold_required": "Bu senaryo bir başlangıç noktası istiyor, ama modelde çalışan bilgisayarı yok.",
+      "no_internet_gateway": "Modelde internet geçidi yok, bu yüzden internet senaryoları başlatılamaz."
+    },
+    "remediation": {
+      "empty": "En az bir düzeltme seç.",
+      "invalid_action": "Düzeltme geçersiz: {{detail}}",
+      "unknown_asset": "Bilinmeyen varlık: {{asset}}.",
+      "unknown_principal": "Bilinmeyen hesap: {{principal}}.",
+      "unknown_vulnerability": "{{vulnerability}} zafiyeti bu revizyonda yok (zaten yamalandı mı?).",
+      "port_not_open": "{{asset}} üzerinde {{port}} portu açık değil.",
+      "nothing_to_restrict": "{{asset}} üzerindeki {{port}} portunu internete açan bir kural yok.",
+      "no_such_permission": "{{principal}} hesabının {{asset}} üzerinde yetkisi yok.",
+      "already_applied": "Zaten uygulanmış: {{target}}.",
+      "already_reverted": "Bu düzeltme zaten geri alındı (r{{revision}}).",
+      "revert_not_head": "Daha yeni revizyonlar var (en son r{{head}}); bunun yerine eski bir revizyonu geri yükle."
+    },
+    "ai": {
+      "provider": "AI sağlayıcısı başarısız oldu ({{reason}}); yerine şablon açıklama gösteriliyor.",
+      "not_configured": "Yapılandırılmış bir AI sağlayıcısı yok; şablon açıklama gösteriliyor."
+    }
+  }
+}

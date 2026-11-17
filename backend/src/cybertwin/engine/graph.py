@@ -192,7 +192,13 @@ class GraphBuilder:
             a = self.assets[v.asset_id]
             mods = K.MOD_EDR if a.security_config.edr else 1.0
             p = v.cvss / 10 * K.EXPLOIT_MATURITY[v.exploit_maturity.value] * mods
-            eol = [f"eol_software:{a.id}:{s.name}" for s in a.software if s.eol]
+            # Only the end-of-life software that runs the exploited service makes this step possible.
+            svc_version = next((p.version for p in a.open_ports if p.port == v.port), "").lower()
+            eol = [
+                f"eol_software:{a.id}:{s.name}"
+                for s in a.software
+                if s.eol and svc_version.startswith(s.name.lower())
+            ]
             self._add(
                 net(a.id, v.port),
                 priv(a.id, v.grants.value),

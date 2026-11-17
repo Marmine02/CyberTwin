@@ -18,4 +18,16 @@ Stated bluntly. Updated as work progresses.
 - **PostgreSQL is not tested.** The code uses portable SQL and a repository layer so it should be
   a `DATABASE_URL` change, but only SQLite runs on this PC.
 - **No LLM provider is available here** (no Ollama, no API keys). Provider adapters are
-  contract-tested with respx only, so they are **not tested on a real provider**.
+  contract-tested at the HTTP level only (respx for ollama/openai_compatible, an `httpx2`
+  MockTransport for the Anthropic SDK). **None of them is tested on a real provider.**
+
+## AI analyst
+- **Anthropic: structured outputs instead of forced tool use.** The spec asks for forced tool use,
+  but current Claude models (default `claude-opus-5-5`) reject `tool_choice: tool` with a 400. The
+  adapter uses the official SDK with `output_config.format` (JSON schema), which gives the same
+  guarantee. Server-side refusal fallback (`fallbacks: "default"`) is enabled.
+- **Streaming is per section, not per token.** The LLM answer must be complete before placeholders
+  can be checked and filled, so `/ai/explain` streams `meta` immediately, then the validated
+  sections one by one. Chat streams the answer sentence by sentence after validation.
+- Template chat understands a fixed set of intents (score, primary path/steps, fix, residual, asset
+  ids/names) in EN/TR/AZ keywords; anything else gets a help message.

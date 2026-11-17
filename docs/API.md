@@ -76,6 +76,30 @@ Scenarios: `sensitive_data_exposure`, `credential_compromise`, `lateral_movement
 | GET | `/remediations/{rid}` | |
 | POST | `/remediations/{rid}/revert` | new revision with the pre-remediation content + re-run; only while it is the head |
 
+## AI analyst (Server-Sent Events)
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/ai/status` | `{configured, provider, model}`; provider comes from env only |
+| POST | `/ai/explain` | `{run_id, lang}` → SSE events: `meta`, `mode {mode: llm\|template, provider, model, cached, notice}`, `section {name, items, verified}` × 5 (`summary`, `key_risks`, `attack_steps`, `remediation_plan`, `residual`), `checks {flags}`, `done` |
+| POST | `/ai/chat` | `{twin_id, run_id?, message, history, lang}` → SSE: `meta`, `mode`, `token` × n, `answer {answer, cited_ids, flags, verified}`, `done` |
+
+`attack_steps` text is always rendered by the engine. In LLM mode the model writes placeholders
+(`{{score}}`, `{{path.P1.likelihood}}`, `{{rec.1.delta}}`, …) that the backend fills; post-check flags:
+`unknown_placeholder`, `literal_number`, `wrong_path_step`, `unknown_id`, `remediation_order`.
+Explanations are cached by `result_hash + lang + provider/model`.
+
+Provider env vars: `CYBERTWIN_AI_PROVIDER` (`none` default, `ollama`, `openai_compatible`, `anthropic`),
+`CYBERTWIN_AI_BASE_URL`, `CYBERTWIN_AI_MODEL`, `CYBERTWIN_AI_API_KEY`, `CYBERTWIN_AI_TIMEOUT_S`,
+`CYBERTWIN_AI_RETRIES`.
+
+## Reports and i18n
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/reports/runs/{run_id}?lang=en\|tr\|az` | structured report with localized, formatted text |
+| GET | `/reports/runs/{run_id}/html?lang=` | printable self-contained HTML in that language |
+| GET | `/i18n` | languages |
+| GET | `/i18n/{lang}` | the shared catalog (same file the frontend bundles) |
+
 Action shapes:
 ```json
 {"action": "restrict_port", "asset_id": "web-01", "port": 22}
