@@ -1,0 +1,99 @@
+{
+  "app": {
+    "name": "CyberTwin",
+    "tagline": "Dijital ikiz güvenlik laboratuvarı",
+    "simOnly": "Yalnızca simülasyon",
+    "simOnlyDetail": "Sanal model. Gerçek hiçbir sistem taranmaz ya da saldırıya uğramaz.",
+    "skipToContent": "İçeriğe geç"
+  },
+  "nav": {
+    "label": "Ana gezinme",
+    "overview": "Genel bakış",
+    "map": "Ağ haritası",
+    "assets": "Varlıklar",
+    "attack": "Saldırı simülasyonu",
+    "vulns": "Zafiyetler",
+    "assistant": "AI asistanı",
+    "remediation": "Düzeltme",
+    "reports": "Raporlar"
+  },
+  "top": {
+    "twin": "İkiz",
+    "revision": "Revizyon",
+    "head": "r{{n}} · en son",
+    "rev": "r{{n}}",
+    "help": "Yardım",
+    "restartTour": "Rehberli demoyu yeniden başlat",
+    "apiDocs": "API belgeleri",
+    "notifications": "Bildirimler",
+    "notificationsUnread_one": "{{count}} okunmamış bildirim",
+    "notificationsUnread_other": "{{count}} okunmamış bildirim",
+    "noNotifications": "Henüz olay yok. Bir simülasyon çalıştır ya da bir düzeltme uygula, burada görünsün.",
+    "markRead": "Tümünü okundu say",
+    "language": "Dil"
+  },
+  "lang": {"en": "English", "tr": "Türkçe", "az": "Azərbaycanca"},
+  "common": {
+    "loading": "Yükleniyor…",
+    "retry": "Tekrar dene",
+    "close": "Kapat",
+    "cancel": "Vazgeç",
+    "confirm": "Onayla",
+    "open": "Aç",
+    "details": "Ayrıntılar",
+    "none": "Yok",
+    "points": "puan",
+    "score": "Puan",
+    "outOf100": "/ 100",
+    "goTo": "{{page}} sayfasını aç"
+  },
+  "state": {
+    "secure": "Güvenli",
+    "warning": "Risk altında",
+    "compromised": "Ele geçirildi"
+  },
+  "overview": {
+    "topology": "Ağ topolojisi",
+    "topologyHint": "Parlama, son çalıştırmadaki durumu gösterir: yeşil güvenli, turuncu risk altında, kırmızı ele geçirildi.",
+    "zoneAll": "Tüm bölgeler",
+    "zoneDot": "Bölgeyi göster: {{zone}}",
+    "criticalFindings": "Kritik bulgular",
+    "noCriticalFindings": "Son çalıştırmada hiçbir saldırı yolu kritik ya da yüksek önemde bir bulguyu kullanmıyor.",
+    "posture": "Güvenlik duruşu",
+    "postureOverall": "Genel:",
+    "postureHistory": "Çalıştırma başına puan",
+    "postureEmpty": "Puan geçmişini görmek için bir simülasyon çalıştır.",
+    "postureOne": "Şimdilik tek çalıştırma var. Eğilimi görmek için başka bir senaryo çalıştır ya da bir düzeltme uygula.",
+    "blastRadius": "Etki alanı",
+    "blastCompromised": "sunucu ele geçirilebilir",
+    "blastReachable": "erişilebilir",
+    "findingsBySeverity": "Önem derecesine göre bulgular",
+    "scenarioCoverage": "Senaryo kapsamı",
+    "runScenario": "{{scenario}} çalıştır",
+    "notRun": "Bu revizyonda çalıştırılmadı",
+    "hardening": "Varlık sıkılaştırma",
+    "aiBrief": "AI özeti",
+    "residual": "Artık maruziyet",
+    "noRun": "Bu revizyonda henüz simülasyon yok.",
+    "runNow": "Hassas Veri İfşası'nı çalıştır",
+    "totalFindings_one": "Modelde {{count}} bulgu",
+    "totalFindings_other": "Modelde {{count}} bulgu",
+    "hg": {"servers": "Sunucular", "endpoints": "Uç noktalar", "network": "Ağ"},
+    "aiMode": "Kip: {{mode}}"
+  },
+  "map": {
+    "fitView": "Görünüme sığdır",
+    "zoomIn": "Yakınlaştır",
+    "zoomOut": "Uzaklaştır",
+    "legend": "Gösterge",
+    "attackPath": "Saldırı yolu",
+    "flow": "Ağ bağlantısı",
+    "trust": "Güven",
+    "permission": "Yetki",
+    "empty": "Bu revizyonda henüz varlık yok."
+  },
+  "error": {
+    "title": "Bu panel yüklenemedi",
+    "unknown": "Backend'den beklenmeyen yanıt ({{status}})."
+  }
+}

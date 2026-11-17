@@ -9,6 +9,8 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // shared/i18n lives one level above the frontend root
+    fs: { allow: ['..'] },
     proxy: { '/api': { target: backend, changeOrigin: false } },
   },
   preview: {

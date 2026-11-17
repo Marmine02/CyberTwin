@@ -434,14 +434,15 @@ def northwind_content() -> TwinContent:
 
 
 # Default map layout (x, y) so the first render is readable; stored in node_positions.
+# Compact enough that the whole graph fits a 1280px-wide screen at the minimum readable zoom.
 POSITIONS: dict[str, tuple[float, float]] = {
-    "inet": (0.0, 260.0),
-    "fw-edge": (230.0, 260.0),
-    "web-01": (460.0, 140.0),
-    "fw-int": (700.0, 260.0),
-    "idp-01": (950.0, 60.0),
-    "app-01": (950.0, 200.0),
-    "customer-db": (1190.0, 200.0),
-    "ws-01": (950.0, 360.0),
-    "adm-ws": (950.0, 500.0),
+    "inet": (0.0, 230.0),
+    "fw-edge": (150.0, 230.0),
+    "web-01": (300.0, 95.0),
+    "fw-int": (450.0, 230.0),
+    "idp-01": (600.0, 20.0),
+    "app-01": (600.0, 160.0),
+    "customer-db": (750.0, 95.0),
+    "ws-01": (600.0, 300.0),
+    "adm-ws": (750.0, 370.0),
 }

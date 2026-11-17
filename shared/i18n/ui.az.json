@@ -1,0 +1,99 @@
+{
+  "app": {
+    "name": "CyberTwin",
+    "tagline": "Rəqəmsal əkiz təhlükəsizlik laboratoriyası",
+    "simOnly": "Yalnız simulyasiya",
+    "simOnlyDetail": "Virtual model. Heç bir real sistem skan edilmir və hücuma məruz qalmır.",
+    "skipToContent": "Məzmuna keç"
+  },
+  "nav": {
+    "label": "Əsas naviqasiya",
+    "overview": "Ümumi baxış",
+    "map": "Şəbəkə xəritəsi",
+    "assets": "Aktivlər",
+    "attack": "Hücum simulyasiyası",
+    "vulns": "Zəifliklər",
+    "assistant": "AI köməkçisi",
+    "remediation": "Düzəliş",
+    "reports": "Hesabatlar"
+  },
+  "top": {
+    "twin": "Əkiz",
+    "revision": "Revizya",
+    "head": "r{{n}} · sonuncu",
+    "rev": "r{{n}}",
+    "help": "Kömək",
+    "restartTour": "Bələdçi demonu yenidən başlat",
+    "apiDocs": "API sənədləri",
+    "notifications": "Bildirişlər",
+    "notificationsUnread_one": "{{count}} oxunmamış bildiriş",
+    "notificationsUnread_other": "{{count}} oxunmamış bildiriş",
+    "noNotifications": "Hələ hadisə yoxdur. Simulyasiya işə sal və ya düzəliş tətbiq et, burada görünəcək.",
+    "markRead": "Hamısını oxunmuş say",
+    "language": "Dil"
+  },
+  "lang": {"en": "English", "tr": "Türkçe", "az": "Azərbaycanca"},
+  "common": {
+    "loading": "Yüklənir…",
+    "retry": "Yenidən cəhd et",
+    "close": "Bağla",
+    "cancel": "Ləğv et",
+    "confirm": "Təsdiqlə",
+    "open": "Aç",
+    "details": "Təfərrüatlar",
+    "none": "Yoxdur",
+    "points": "bal",
+    "score": "Bal",
+    "outOf100": "/ 100",
+    "goTo": "{{page}} səhifəsini aç"
+  },
+  "state": {
+    "secure": "Təhlükəsiz",
+    "warning": "Risk altında",
+    "compromised": "Ələ keçirilib"
+  },
+  "overview": {
+    "topology": "Şəbəkə topologiyası",
+    "topologyHint": "İşıqlanma son icradakı vəziyyəti göstərir: yaşıl təhlükəsiz, narıncı risk altında, qırmızı ələ keçirilib.",
+    "zoneAll": "Bütün zonalar",
+    "zoneDot": "Zonanı göstər: {{zone}}",
+    "criticalFindings": "Kritik tapıntılar",
+    "noCriticalFindings": "Son icrada heç bir hücum yolu kritik və ya yüksək ciddilikli tapıntıdan istifadə etmir.",
+    "posture": "Təhlükəsizlik vəziyyəti",
+    "postureOverall": "Ümumi:",
+    "postureHistory": "Hər icra üzrə bal",
+    "postureEmpty": "Bal tarixçəsini görmək üçün simulyasiya işə sal.",
+    "postureOne": "Hələlik bir icra var. Meyli görmək üçün başqa ssenari işə sal və ya düzəliş tətbiq et.",
+    "blastRadius": "Təsir radiusu",
+    "blastCompromised": "server ələ keçirilə bilər",
+    "blastReachable": "əlçatan",
+    "findingsBySeverity": "Ciddiliyə görə tapıntılar",
+    "scenarioCoverage": "Ssenari əhatəsi",
+    "runScenario": "{{scenario}} işə sal",
+    "notRun": "Bu revizyada işə salınmayıb",
+    "hardening": "Aktivlərin möhkəmləndirilməsi",
+    "aiBrief": "AI xülasəsi",
+    "residual": "Qalıq risk",
+    "noRun": "Bu revizyada hələ simulyasiya yoxdur.",
+    "runNow": "Həssas Məlumatların İfşasını işə sal",
+    "totalFindings_one": "Modeldə {{count}} tapıntı",
+    "totalFindings_other": "Modeldə {{count}} tapıntı",
+    "hg": {"servers": "Serverlər", "endpoints": "Son nöqtələr", "network": "Şəbəkə"},
+    "aiMode": "Rejim: {{mode}}"
+  },
+  "map": {
+    "fitView": "Görünüşə sığdır",
+    "zoomIn": "Yaxınlaşdır",
+    "zoomOut": "Uzaqlaşdır",
+    "legend": "İşarələr",
+    "attackPath": "Hücum yolu",
+    "flow": "Şəbəkə əlaqəsi",
+    "trust": "Etibar",
+    "permission": "Hüquq",
+    "empty": "Bu revizyada hələ aktiv yoxdur."
+  },
+  "error": {
+    "title": "Bu panel yüklənmədi",
+    "unknown": "Backend-dən gözlənilməz cavab ({{status}})."
+  }
+}

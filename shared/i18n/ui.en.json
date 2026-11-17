@@ -1,0 +1,99 @@
+{
+  "app": {
+    "name": "CyberTwin",
+    "tagline": "Digital twin security lab",
+    "simOnly": "Simulation only",
+    "simOnlyDetail": "Virtual model. Nothing real is scanned or attacked.",
+    "skipToContent": "Skip to content"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "overview": "Overview",
+    "map": "Network map",
+    "assets": "Assets",
+    "attack": "Attack simulation",
+    "vulns": "Vulnerabilities",
+    "assistant": "AI assistant",
+    "remediation": "Remediation",
+    "reports": "Reports"
+  },
+  "top": {
+    "twin": "Twin",
+    "revision": "Revision",
+    "head": "r{{n}} · latest",
+    "rev": "r{{n}}",
+    "help": "Help",
+    "restartTour": "Restart guided demo",
+    "apiDocs": "API documentation",
+    "notifications": "Notifications",
+    "notificationsUnread_one": "{{count}} unread notification",
+    "notificationsUnread_other": "{{count}} unread notifications",
+    "noNotifications": "No events yet. Run a simulation or apply a fix and it shows up here.",
+    "markRead": "Mark all as read",
+    "language": "Language"
+  },
+  "lang": {"en": "English", "tr": "Türkçe", "az": "Azərbaycanca"},
+  "common": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "open": "Open",
+    "details": "Details",
+    "none": "None",
+    "points": "pts",
+    "score": "Score",
+    "outOf100": "/ 100",
+    "goTo": "Open {{page}}"
+  },
+  "state": {
+    "secure": "Secure",
+    "warning": "At risk",
+    "compromised": "Compromised"
+  },
+  "overview": {
+    "topology": "Network topology",
+    "topologyHint": "Glow shows each asset's state in the latest run: green secure, orange at risk, red compromised.",
+    "zoneAll": "All zones",
+    "zoneDot": "Show zone: {{zone}}",
+    "criticalFindings": "Critical findings",
+    "noCriticalFindings": "No critical or high finding is used by an attack path in the latest run.",
+    "posture": "Security posture",
+    "postureOverall": "Overall:",
+    "postureHistory": "Score per run",
+    "postureEmpty": "Run a simulation to see the score history.",
+    "postureOne": "One run so far. Run another scenario or apply a fix to see the trend.",
+    "blastRadius": "Blast radius",
+    "blastCompromised": "hosts compromisable",
+    "blastReachable": "reachable",
+    "findingsBySeverity": "Findings by severity",
+    "scenarioCoverage": "Scenario coverage",
+    "runScenario": "Run {{scenario}}",
+    "notRun": "Not run on this revision",
+    "hardening": "Asset hardening",
+    "aiBrief": "AI brief",
+    "residual": "Residual exposure",
+    "noRun": "No simulation on this revision yet.",
+    "runNow": "Run Sensitive Data Exposure",
+    "totalFindings_one": "{{count}} finding in the model",
+    "totalFindings_other": "{{count}} findings in the model",
+    "hg": {"servers": "Servers", "endpoints": "Endpoints", "network": "Network"},
+    "aiMode": "Mode: {{mode}}"
+  },
+  "map": {
+    "fitView": "Fit view",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "legend": "Legend",
+    "attackPath": "Attack path",
+    "flow": "Network link",
+    "trust": "Trust",
+    "permission": "Permission",
+    "empty": "This revision has no assets yet."
+  },
+  "error": {
+    "title": "Could not load this panel",
+    "unknown": "Unexpected response from the backend ({{status}})."
+  }
+}

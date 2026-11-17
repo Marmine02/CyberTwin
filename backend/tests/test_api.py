@@ -60,7 +60,7 @@ def test_model_view(client: TestClient) -> None:
     assert web["vulnerability_ids"] == ["v-nginx-web01", "v-openssh-web01"]
     assert web["risk_score"] > 0
     assert any(c["kind"] == "permission" and c["derived"] for c in m["derived_connections"])
-    assert m["positions"]["web-01"] == {"x": 460.0, "y": 140.0}
+    assert m["positions"]["web-01"] == {"x": 300.0, "y": 95.0}
 
 
 def test_demo_flow_simulate_apply_revert(client: TestClient) -> None:

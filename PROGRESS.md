@@ -25,11 +25,17 @@
   `ai/` (context/placeholders, checks, narrative + template fallback, providers, service) with SSE
   routes `/ai/explain`, `/ai/chat`; reports JSON + printable HTML; `/i18n/{lang}`. 106 tests.
 
+- Phase 7: frontend foundation: i18n (shared catalogs + `shared/i18n/ui.{en,tr,az}.json`), API client
+  (error envelope, POST-SSE), hooks, Zustand stores, neon design system (`styles/index.css`), shell
+  (TopBar, IconRail, menus), neon map (`components/map`), Overview page. Checkpoint images in
+  `docs/screenshots/checkpoint-*.png` (real backend + Edge).
+
 ## In progress
-- Phase 7: frontend i18n foundation + neon design system -> VISUAL CHECKPOINT (wait for owner).
+- **VISUAL CHECKPOINT: waiting for the owner's approval** before building the other pages.
 
 ## Next
-- Phase 8: pages (after owner approves the visual checkpoint).
+- Phase 8: pages (Network map, Assets, Attack simulation, Vulnerabilities, AI assistant,
+  Remediation, Reports) + guided demo.
 
 ## Open questions / blockers
 - `docs/design/` reference images are missing. Owner will add them before Phase 7.
