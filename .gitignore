@@ -1,0 +1,40 @@
+# dependencies / envs
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# build output
+dist/
+build/
+*.egg-info/
+
+# data / secrets
+*.db
+*.db-journal
+*.sqlite
+.env
+.env.*
+!.env.example
+
+# logs and caches
+logs/
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.vite/
+*.tsbuildinfo
+
+# test artifacts
+test-results/
+playwright-report/
+blob-report/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
