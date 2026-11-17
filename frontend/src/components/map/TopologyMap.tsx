@@ -107,7 +107,9 @@ function MapInner(props: TopologyMapProps) {
   const minZoom = props.compact ? 0.2 : MIN_ZOOM
 
   const [nodes, setNodes, onNodesChange] = useNodesState<NeonNodeType>(builtNodes)
-  useEffect(() => setNodes(builtNodes), [builtNodes, setNodes])
+  useEffect(() => {
+    setNodes(builtNodes)
+  }, [builtNodes, setNodes])
 
   const edges: NeonEdgeType[] = useMemo(() => {
     const byId = new Map(model.assets.map((a) => [a.id, a]))

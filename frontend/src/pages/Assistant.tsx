@@ -33,7 +33,11 @@ export function Assistant() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const chatEnd = useRef<HTMLDivElement>(null)
-  useEffect(() => chatEnd.current?.scrollIntoView({ block: 'nearest' }), [turns])
+  useEffect(() => {
+    // Scroll only the chat log, never the page.
+    const box = chatEnd.current?.parentElement
+    if (box) box.scrollTop = box.scrollHeight
+  }, [turns])
 
   const ask = async (message: string) => {
     if (!message.trim() || !twinId || busy) return
