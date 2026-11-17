@@ -63,7 +63,7 @@ Revisions are immutable and numbered. Every edit, remediation, revert or restore
 | GET | `/twins/{id}/simulations/latest?scenario=&revision=` | latest matching run or `null` |
 | GET | `/simulations/{run_id}` | full run |
 | GET | `/twins/{id}/recommendations?scenario=&revision=&foothold=` | recommendations, chokepoints, findings, residual exposure |
-| POST | `/twins/{id}/compare` | `{scenario, revision_a, revision_b, params?}` → before/after comparison + both path lists |
+| POST | `/twins/{id}/compare` | `{scenario, revision_a, revision_b, params?}` → `{comparison, result_a, result_b}` (before/after comparison + both full results) |
 
 Scenarios: `sensitive_data_exposure`, `credential_compromise`, `lateral_movement`,
 `privilege_escalation`, `outdated_service_exploitation`. The result schema is in docs/ENGINE.md §6.

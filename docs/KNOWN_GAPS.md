@@ -21,6 +21,34 @@ Stated bluntly. Updated as work progresses.
   contract-tested at the HTTP level only (respx for ollama/openai_compatible, an `httpx2`
   MockTransport for the Anthropic SDK). **None of them is tested on a real provider.**
 
+## Product and engine
+- **No authentication or multi-user support.** It is a local desktop app: the backend binds to
+  127.0.0.1 only and has no login.
+- **Engine approximations** (also in docs/ENGINE.md): credential use is possible toward any asset
+  whose auth port some other host can reach (a credential does not remember where it was stolen);
+  network reach is all-or-nothing per firewall chain (no time, no detection, no noise). "Show full
+  discovery" replays the engine's Dijkstra discovery order, not a timed simulation.
+- `risk_score` on assets (Assets page, model API) always comes from an internet-entry analysis,
+  independent of the selected scenario. Scenario-specific risk is in each run's `asset_risk`.
+- The `reduce_permission` fix the engine recommends lowers rights to `user`, not `none`; this keeps
+  svc-web's application working in the story and is why its admin right still shows as residual
+  exposure after the top 3 fixes.
+- Mini maps on the Remediation page run in a compact mode that hides node labels (names on hover)
+  so the whole graph fits; the ≥ 11 px label rule applies to the full-size maps.
+
+## Translations
+- **The Azerbaijani (and Turkish) texts were written by the developer, not reviewed by a native
+  speaker.** docs/i18n/az_review.md lists every Azerbaijani string next to its English source, with
+  the terminology a native reviewer should check first marked "⚠ check".
+- Model data (asset names, CVE titles, rule descriptions, software names) stays as entered; it is
+  not translated. The E2E English-fragment check excludes exactly these data strings.
+
+## Tests
+- The print dialog itself is not exercised by E2E (it would block the browser); the report HTML,
+  "Open" in a new tab and the JSON download are.
+- The launcher's error dialogs were verified through `CYBERTWIN_NO_DIALOG` (message text and exit
+  code), not by clicking a real dialog.
+
 ## Desktop launcher
 - Two switches exist only for automated verification: `CYBERTWIN_CDP_PORT` (lets a script drive the
   real app window over the Chrome DevTools Protocol) and `CYBERTWIN_NO_DIALOG` (prints errors instead
